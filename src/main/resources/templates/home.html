@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 100px auto;
+            text-align: center;
+        }
+        .card {
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .nav {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        a {
+            display: inline-block;
+            padding: 10px 25px;
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            border-radius: 8px;
+        }
+        .btn-solo    { background-color: #4CAF50; }
+        .btn-multi   { background-color: #008CBA; }
+        .btn-login   { background-color: #008CBA; }
+        .btn-register{ background-color: #4CAF50; }
+        .btn-logout  { background-color: #f44336; }
+        .btn-profile { background-color: #ff9800; }
+        .btn-disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .lock-msg {
+            color: #888;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Barre de navigation -->
+<div class="nav">
+    <!-- Si NON connecté -->
+    <div sec:authorize="isAnonymous()">
+        <a href="/login"    class="btn-login">🔑 Connexion</a>
+        <a href="/register" class="btn-register">📝 Inscription</a>
+    </div>
+
+    <!-- Si connecté -->
+    <div sec:authorize="isAuthenticated()">
+        <a href="/profile"  class="btn-profile">👤 <span sec:authentication="name"></span></a>
+        <a href="/logout"   class="btn-logout">🚪 Déconnexion</a>
+    </div>
+</div>
+
+<h1>🎯 Petit Bac</h1>
+<p>Choisis ton mode de jeu !</p>
+
+<!-- Solo — accessible à tous -->
+<div class="card">
+    <h2>👤 Solo</h2>
+    <p>Joue seul contre le dictionnaire</p>
+    <a href="/solo" class="btn-solo">Jouer en solo 🚀</a>
+</div>
+
+<!-- Multi — connexion requise -->
+<div class="card">
+    <h2>👥 Multijoueur</h2>
+
+    <!-- Si connecté → bouton actif -->
+    <div sec:authorize="isAuthenticated()">
+        <p>Crée ou rejoins une salle avec des amis</p>
+        <a href="/lobby" class="btn-multi">Jouer en multi 🎮</a>
+    </div>
+
+    <!-- Si non connecté → bouton grisé + message -->
+    <div sec:authorize="isAnonymous()">
+        <p>Crée ou rejoins une salle avec des amis</p>
+        <a class="btn-disabled">Jouer en multi 🎮</a>
+        <p class="lock-msg">🔒 Connexion requise pour jouer en multijoueur</p>
+    </div>
+</div>
+
+</body>
+</html>

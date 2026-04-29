@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac - Détail des scores</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        th.moi {
+            background-color: #ff9800;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+        td.categorie {
+            font-weight: bold;
+            text-align: left;
+            background: #f5f5f5;
+        }
+        .valide   { color: green; }
+        .invalide { color: red;   }
+        .penalite { color: orange;}
+        .points {
+            font-size: 12px;
+            color: gray;
+        }
+        .boutons { margin-top: 25px; }
+        a {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 25px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+        .btn-retour  { background-color: #008CBA; }
+        .btn-rejouer { background-color: #4CAF50; }
+    </style>
+</head>
+<body>
+<h1>📊 Détail des scores</h1>
+<p>Lettre : <strong th:text="${lettre}"></strong>
+    — <strong th:text="${points}"></strong> pt(s) par mot unique valide</p>
+<p>BAC! crié par : <strong th:text="${joueurBac}"></strong></p>
+
+<table>
+    <!-- En-tête : Catégorie + une colonne par joueur -->
+    <tr>
+        <th>Catégorie</th>
+        <th th:each="joueur : ${joueurs}"
+            th:text="${joueur}"
+            th:class="${joueur == prenom ? 'moi' : ''}">
+        </th>
+    </tr>
+
+    <!-- Une ligne par catégorie -->
+    <tr th:each="ligne : ${tableau}">
+        <td class="categorie" th:text="${ligne.categorie}"></td>
+
+        <!-- Une cellule par joueur -->
+        <td th:each="entree : ${ligne.motsParJoueur}">
+                <span th:if="${entree.valide}"
+                      class="valide"
+                      th:text="${entree.mot}">
+                </span>
+            <span th:if="${!entree.valide && entree.points == -1}"
+                  class="penalite"
+                  th:text="${entree.mot}">
+                </span>
+            <span th:if="${!entree.valide && entree.points != -1}"
+                  class="invalide"
+                  th:text="${entree.mot}">
+                </span>
+            <br/>
+            <span class="points"
+                  th:text="${entree.points > 0 ? '+' + entree.points + ' pts' :
+                                 entree.points < 0 ? entree.points + ' pt' : '0 pt'}">
+                </span>
+        </td>
+    </tr>
+</table>
+
+<div class="boutons">
+    <a th:href="@{/multi-results(code=${code},prenom=${prenom})}"
+       class="btn-retour">← Retour au classement</a>
+    <a href="/lobby" class="btn-rejouer">🔄 Nouvelle partie</a>
+</div>
+</body>
+</html>

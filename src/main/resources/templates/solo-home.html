@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 100px auto;
+            text-align: center;
+        }
+        input {
+            padding: 10px;
+            font-size: 18px;
+            width: 250px;
+            margin: 20px 0;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+        }
+        button {
+            padding: 12px 30px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+<h1>🎯 Petit Bac</h1>
+<p>Entre ton prénom pour commencer !</p>
+
+<form action="/start" method="post">
+    <div>
+        <input type="text" name="prenom"
+               placeholder="Ton prénom..." required/>
+    </div>
+    <button type="submit">Jouer 🚀</button>
+</form>
+</body>
+</html>

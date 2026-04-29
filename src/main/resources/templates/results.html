@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac - Résultats</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 550px;
+            margin: 40px auto;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .valide   { color: green; font-weight: bold; }
+        .invalide { color: red; }
+        .score-box {
+            background: #f0f8ff;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 20px;
+        }
+        .boutons { margin-top: 20px; }
+        a {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 25px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .btn-rejouer { background-color: #4CAF50; }
+        .btn-accueil { background-color: #008CBA; }
+    </style>
+</head>
+<body>
+<h1>🎯 Résultats</h1>
+<p>Lettre : <strong th:text="${lettre}"></strong>
+    — <strong th:text="${points}"></strong> pt(s) par mot valide</p>
+
+<table>
+    <tr>
+        <th>Catégorie</th>
+        <th>Ton mot</th>
+        <th>Résultat</th>
+    </tr>
+    <tr th:each="r : ${resultats}">
+        <td th:text="${r.categorie}"></td>
+        <td th:text="${r.mot}"></td>
+        <td>
+            <span th:if="${r.valide}" class="valide">✅ +<span th:text="${points}"></span> pts</span>
+            <span th:if="${!r.valide && !r.bonneLettre}" class="invalide">❌ Mauvaise lettre</span>
+            <span th:if="${!r.valide && r.bonneLettre && !r.dansBDD}" class="invalide">❌ Mot inconnu</span>
+        </td>
+    </tr>
+</table>
+
+<div class="score-box">
+    🏆 Score : <strong th:text="${scoreTotal}"></strong> /
+    <span th:text="${maxScore}"></span> pts
+    (<span th:text="${motsValides}"></span> /
+    <span th:text="${resultats.size()}"></span> mots valides)
+</div>
+
+<div class="boutons">
+    <a href="/start-again" class="btn-rejouer">🔄 Rejouer</a>
+    <a href="/"            class="btn-accueil">🏠 Accueil</a>
+</div>
+</body>
+</html>

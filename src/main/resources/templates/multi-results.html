@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac - Résultats</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 650px;
+            margin: 40px auto;
+            text-align: center;
+        }
+        .podium {
+            background: #f0f8ff;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .podium-ligne {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 20px;
+            margin: 5px 0;
+            border-radius: 6px;
+            font-size: 18px;
+        }
+        .premier { background: #ffd700; font-weight: bold; }
+        .moi     { background: #fff3cd; font-weight: bold; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            text-align: left;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px;
+        }
+        td { padding: 8px; border-bottom: 1px solid #ddd; }
+        .valide   { color: green; }
+        .invalide { color: red; }
+        .joueur-titre {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 20px 0 5px 0;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .boutons { margin-top: 25px; }
+        a {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 25px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+        .btn-rejouer { background-color: #4CAF50; }
+        .btn-accueil { background-color: #008CBA; }
+        .btn-mutli-scores { background-color: #4CAF50;}
+    </style>
+</head>
+<body>
+<h1>🏆 Résultats</h1>
+<p>Lettre : <strong th:text="${lettre}"></strong>
+    — <strong th:text="${points}"></strong> pt(s) par mot valide unique</p>
+<p>BAC! crié par : <strong th:text="${joueurBac}"></strong></p>
+
+<!-- Classement -->
+<div class="podium">
+    <h2>🥇 Classement</h2>
+    <div th:each="ligne, i : ${classement}"
+         th:class="'podium-ligne' + ${i.index == 0 ? ' premier' : ''} + ${ligne.estMoi ? ' moi' : ''}">
+        <span th:text="${i.index + 1} + '. ' + ${ligne.joueur}"></span>
+        <span th:text="${ligne.score} + ' pts'"></span>
+    </div>
+</div>
+
+<div class="boutons">
+    <a href="/lobby" class="btn-rejouer">🔄 Nouvelle partie</a>
+    <a href="/"      class="btn-accueil">🏠 Accueil</a>
+    <a th:href="@{/multi-scores(code=${code},prenom=${prenom})}"
+       class="btn-mutli-scores">📊 Détail des scores</a>
+</div>
+</body>
+</html>

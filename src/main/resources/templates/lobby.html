@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac - Lobby</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 60px auto;
+            text-align: center;
+        }
+        .card {
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        input, select {
+            padding: 10px;
+            font-size: 16px;
+            width: 220px;
+            margin: 8px 0;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+        }
+        button {
+            padding: 10px 25px;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .btn-create { background-color: #4CAF50; }
+        .btn-join   { background-color: #008CBA; }
+        .erreur     { color: red; margin: 10px 0; }
+    </style>
+</head>
+<body>
+<h1>🎯 Petit Bac</h1>
+<p th:if="${erreur}" class="erreur" th:text="${erreur}"></p>
+
+<!-- Créer une salle -->
+<div class="card">
+    <h2>➕ Créer une salle</h2>
+    <form action="/create-room" method="post">
+        <div><input type="text" name="prenom" placeholder="Ton prénom..." required/></div>
+        <div>
+            <select name="maxJoueurs">
+                <option value="2">2 joueurs</option>
+                <option value="3">3 joueurs</option>
+                <option value="4">4 joueurs</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-create">Créer 🚀</button>
+    </form>
+</div>
+
+<!-- Rejoindre une salle -->
+<div class="card">
+    <h2>🔗 Rejoindre une salle</h2>
+    <form action="/join-room" method="post">
+        <div><input type="text" name="prenom" placeholder="Ton prénom..." required/></div>
+        <div><input type="text" name="code" placeholder="Code de la salle..." required/></div>
+        <button type="submit" class="btn-join">Rejoindre ✅</button>
+    </form>
+</div>
+
+<a href="/">← Retour accueil</a>
+</body>
+</html>

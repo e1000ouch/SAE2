@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac - Multijoueur</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 550px;
+            margin: 40px auto;
+            text-align: center;
+        }
+        .lettre {
+            font-size: 100px;
+            font-weight: bold;
+            color: #4CAF50;
+            line-height: 1;
+        }
+        .timer-box {
+            display: none;
+            background: #ffe0e0;
+            border: 2px solid red;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: red;
+        }
+        .bac-notif {
+            display: none;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .categorie-row {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            gap: 10px;
+        }
+        .categorie-row label {
+            width: 160px;
+            text-align: right;
+            font-weight: bold;
+        }
+        .categorie-row input {
+            flex: 1;
+            padding: 8px;
+            font-size: 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+        }
+        .boutons { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+        button {
+            padding: 12px 25px;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        .btn-bac     { background-color: #ff5722; }
+        .btn-valider { background-color: #4CAF50; }
+        button:disabled { background-color: #aaa; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+<h1>🎯 Petit Bac</h1>
+<p>Bonne chance <strong th:text="${prenom}"></strong> !</p>
+
+<div class="lettre" th:text="${lettre}"></div>
+<p>⭐ Cette lettre vaut <strong th:text="${points}"></strong> pt(s)</p>
+
+<!-- Notification Bac! -->
+<div class="bac-notif" id="bac-notif"></div>
+
+<!-- Timer -->
+<div class="timer-box" id="timer-box">
+    ⏱️ Temps restant : <span id="timer-count">30</span>s
+</div>
+
+<!-- Formulaire -->
+<div id="form-container">
+    <div th:each="cat : ${categoriesAvecNoms}" class="categorie-row">
+        <label th:text="${cat.nom}"></label>
+        <input th:id="${cat.id}" th:name="${cat.id}" th:placeholder="'Commence par ' + ${lettre} + '...'"
+               type="text">
+    </div>
+
+    <div class="boutons">
+        <button class="btn-bac" id="btn-bac" onclick="crierBac()">🏆 BAC !</button>
+        <button class="btn-valider" onclick="validerReponses(false)">Valider ✅</button>
+    </div>
+</div>
+<!-- Ajoute après les boutons BAC! et Valider -->
+<div style="margin-top: 15px;">
+    <button onclick="quitterPartie()"
+            style="padding: 8px 20px; background-color: #f44336;
+                   color: white; border: none; border-radius: 8px;
+                   font-size: 14px; cursor: pointer;">
+        🚪 Quitter la partie
+    </button>
+</div>
+
+<script th:inline="javascript">
+    const code   = [[${code}]];
+    const prenom = sessionStorage.getItem('monPrenom');
+    console.log("multi-game.html — mon prenom est : " + prenom);
+
+    let timerInterval = null;
+    let formDisabled  = false;
+    let bacCried      = false;
+
+    // --- WebSocket ---
+    const socket = new SockJS(window.location.origin + '/ws');
+    const stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function() {
+        stompClient.subscribe('/topic/room/' + code, function(message) {
+            const data = JSON.parse(message.body);
+
+            if (data.type === 'BAC_CRIED' && data.joueur !== prenom) {
+                showBacNotif(data.joueur);
+                startTimer(data.timer);
+                disableBacButton();
+            }
+
+            if (data.type === 'GAME_OVER') {
+                clearInterval(timerInterval);
+                clearInterval(gamePolling);
+                window.location.href = '/multi-results?code=' + code
+                    + '&prenom=' + sessionStorage.getItem('monPrenom');
+            }
+
+            if (data.type === 'GAME_CANCELLED') {
+                clearInterval(timerInterval);
+                clearInterval(gamePolling);
+                alert('🚪 ' + data.joueur + ' a quitté la partie. La partie est annulée !');
+                window.location.href = '/';
+            }
+        });
+    });
+
+    // --- Polling ---
+    const gamePolling = setInterval(() => {
+        fetch('/room-status?code=' + code)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'FINISHED') {
+                    clearInterval(gamePolling);
+                    if (data.cancelled) {
+                        alert('🚪 Un joueur a quitté. La partie est annulée !');
+                        window.location.href = '/';
+                    } else {
+                        window.location.href = '/multi-results?code=' + code
+                            + '&prenom=' + prenom;
+                    }
+                }
+            });
+    }, 1500);
+
+    // --- Crier BAC! ---
+    function crierBac() {
+        if (formDisabled || bacCried) return;
+        bacCried = true;
+        disableBacButton();
+        validerReponses(true);
+    }
+
+    // --- Valider les réponses ---
+    function validerReponses(criedBac) {
+        if (formDisabled) return;
+        formDisabled = true;
+
+        document.querySelectorAll('input').forEach(el => el.disabled = true);
+        document.querySelectorAll('button').forEach(el => el.disabled = true);
+
+        const categories = ['prenom','animal','fruit','legume','capital_pays','metier'];
+        const params = new URLSearchParams();
+
+        params.append('joueurPrenom', prenom);
+        params.append('criedBac', criedBac);
+
+        categories.forEach(cat => {
+            const input = document.getElementById(cat);
+            params.append(cat, input ? input.value : '');
+        });
+
+        fetch('/multi-submit', {
+            method: 'POST',
+            body: params
+        });
+    }
+
+    // --- Quitter la partie ---
+    function quitterPartie() {
+        if (confirm("⚠️ Si vous quittez, la partie s'arrête pour TOUS les joueurs. Confirmer ?")) {
+            envoyerQuit();
+            window.location.href = '/';
+        }
+    }
+
+    // --- Envoie la requête d'abandon ---
+    function envoyerQuit() {
+        navigator.sendBeacon('/quit-game');
+    }
+
+    // --- Fermeture d'onglet ---
+    window.addEventListener('beforeunload', function(e) {
+        if (!formDisabled) {
+            envoyerQuit();
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    // --- Grise le bouton BAC! ---
+    function disableBacButton() {
+        const bacBtn = document.getElementById('btn-bac');
+        if (bacBtn) bacBtn.disabled = true;
+    }
+
+    // --- Notification BAC! ---
+    function showBacNotif(joueur) {
+        const notif = document.getElementById('bac-notif');
+        notif.style.display = 'block';
+        notif.textContent = '⚡ ' + joueur + ' a crié BAC ! Tu as 30 secondes !';
+    }
+
+    // --- Timer ---
+    function startTimer(seconds) {
+        const timerBox   = document.getElementById('timer-box');
+        const timerCount = document.getElementById('timer-count');
+        timerBox.style.display = 'block';
+        let remaining = seconds;
+        timerCount.textContent = remaining;
+
+        timerInterval = setInterval(() => {
+            remaining--;
+            timerCount.textContent = remaining;
+
+            if (remaining <= 0) {
+                clearInterval(timerInterval);
+                timerCount.textContent = '0';
+                if (!formDisabled) {
+                    validerReponses(false);
+                }
+            }
+        }, 1000);
+    }
+
+</script>
+</body>
+</html>

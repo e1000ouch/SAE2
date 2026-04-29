@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac - Salle d'attente</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 60px auto;
+            text-align: center;
+        }
+        .code {
+            font-size: 48px;
+            font-weight: bold;
+            color: #4CAF50;
+            letter-spacing: 8px;
+            margin: 20px 0;
+        }
+        .joueurs-liste {
+            list-style: none;
+            padding: 0;
+        }
+        .joueurs-liste li {
+            padding: 8px;
+            margin: 5px 0;
+            background: #f0f8ff;
+            border-radius: 6px;
+            font-size: 18px;
+        }
+        .attente { color: gray; font-style: italic; }
+    </style>
+</head>
+<body>
+<h1>🎯 Salle d'attente</h1>
+<p>Partage ce code à tes amis :</p>
+
+<div class="code" th:text="${code}"></div>
+
+<h3>Joueurs connectés :</h3>
+<ul class="joueurs-liste" id="joueurs-liste">
+    <li th:each="j : ${joueurs}" th:text="${j}"></li>
+</ul>
+
+<p class="attente" id="attente-msg">
+    En attente des autres joueurs...
+</p>
+
+<!-- Script WebSocket -->
+<script th:inline="javascript">
+    const code   = [[${code}]];
+    const prenom = [[${prenom}]];
+    sessionStorage.setItem('monPrenom', prenom);
+
+    // Polling toutes les 2 secondes
+    const pollingInterval = setInterval(() => {
+        fetch('/room-status?code=' + code)
+            .then(res => res.json())
+            .then(data => {
+                // Met à jour la liste des joueurs
+                if (data.joueurs) {
+                    const liste = document.getElementById('joueurs-liste');
+                    liste.innerHTML = '';
+                    data.joueurs.forEach(j => {
+                        const li = document.createElement('li');
+                        li.textContent = j;
+                        liste.appendChild(li);
+                    });
+                }
+
+                // Démarre si la partie a commencé
+                if (data.status === 'PLAYING') {
+                    clearInterval(pollingInterval); // arrête le polling
+                    window.location.href = '/multi-game?lettre=' + data.lettre;
+                }
+                // Ajoute ce cas dans le fetch du polling
+                if (data.status === 'FINISHED') {
+                    clearInterval(pollingInterval);
+                    // Vérifie si c'est une annulation ou une fin normale
+                if (data.cancelled) {
+                        alert('🚪 Un joueur a quitté la salle. La partie est annulée !');
+                        window.location.href = '/';
+                } else {
+                        window.location.href = '/multi-game?lettre=' + data.lettre;
+    }
+}
+            });
+    }, 1500); // vérifie toutes les 2 secondes
+</script></body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 400px; margin: 100px auto; text-align: center; }
+        input { padding: 10px; width: 250px; margin: 8px 0; font-size: 16px; border: 2px solid #ddd; border-radius: 6px; }
+        button { padding: 10px 30px; background: #4CAF50; color: white; border: none; font-size: 16px; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+        a { color: #008CBA; }
+    </style>
+</head>
+<body>
+<h1>📝 Inscription</h1>
+
+<form action="/register" method="post">
+    <div><input type="text"     name="username" placeholder="Nom d'utilisateur" required/></div>
+    <div><input type="password" name="password" placeholder="Mot de passe"      required/></div>
+    <button type="submit">Créer mon compte</button>
+</form>
+
+<p>Déjà un compte ? <a href="/login">Se connecter</a></p>
+<p><a href="/">← Retour accueil</a></p>
+</body>
+</html>

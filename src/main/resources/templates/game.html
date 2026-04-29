@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac - Jeu</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 550px;
+            margin: 40px auto;
+            text-align: center;
+        }
+        .lettre {
+            font-size: 100px;
+            font-weight: bold;
+            color: #4CAF50;
+            line-height: 1;
+        }
+        .points-lettre {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 8px;
+            margin: 10px 0 20px 0;
+            font-size: 14px;
+        }
+        .categorie-row {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            gap: 10px;
+        }
+        .categorie-row label {
+            width: 160px;
+            text-align: right;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .categorie-row input {
+            flex: 1;
+            padding: 8px;
+            font-size: 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+        }
+        button {
+            margin-top: 25px;
+            padding: 12px 40px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+<h1>🎯 Petit Bac</h1>
+<p>Bonne chance <strong th:text="${prenom}"></strong> !</p>
+
+<div class="lettre" th:text="${lettre}"></div>
+
+<div class="points-lettre">
+    ⭐ Cette lettre vaut <strong th:text="${points}"></strong> point(s) par mot valide !
+</div>
+
+<form action="/submit" method="post">
+    <div th:each="cat : ${categoriesAvecNoms}" class="categorie-row">
+        <label th:text="${cat.nom}"></label>
+        <input type="text"
+               th:name="${cat.id}"
+               th:placeholder="'Commence par ' + ${lettre} + '...'"
+               required/>
+    </div>
+    <button type="submit">Valider 🎯</button>
+    <!-- Ajoute ce bouton dans la page solo, après le bouton Valider -->
+    <div style="margin-top: 15px;">
+        <a href="/" style="
+        display: inline-block;
+        padding: 8px 20px;
+        background-color: #f44336;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 14px;">
+            🚪 Quitter la partie
+        </a>
+    </div>
+</form>
+
+</body>
+</html>

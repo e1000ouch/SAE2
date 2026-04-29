@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            text-align: center;
+        }
+        .lettre {
+            font-size: 80px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 20px 0;
+        }
+        input, select {
+            padding: 8px;
+            margin: 10px;
+            font-size: 16px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+<h1>🎯 Petit Bac</h1>
+
+<!-- Affiche la lettre tirée -->
+<div class="lettre" th:text="${lettre}"></div>
+<p>Trouve un mot qui commence par cette lettre !</p>
+
+<form action="/verifier" method="post">
+
+    <!-- Champ caché pour transmettre la lettre au Controller -->
+    <input type="hidden" name="lettre" th:value="${lettre}"/>
+
+    <div>
+        <select name="categorie">
+            <option value="prenom">Prénom</option>
+            <option value="animal">Animal</option>
+            <option value="fruit">Fruit</option>
+            <option value="legume">Légume</option>
+            <option value="capital_pays">Capitales & Pays</option>
+            <option value="metier">Métier</option>
+        </select>
+    </div>
+    <div>
+        <input type="text" name="mot" placeholder="Entre ton mot..." required/>
+    </div>
+    <button type="submit">Vérifier ✅</button>
+</form>
+</body>
+</html>
