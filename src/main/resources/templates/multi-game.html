@@ -130,10 +130,10 @@
                 disableBacButton();
             }
 
-            if (data.type === 'GAME_OVER') {
+            if (data.type === 'GAME_OVER' || data.type === 'CHALLENGE_PHASE_START') {
                 clearInterval(timerInterval);
                 clearInterval(gamePolling);
-                window.location.href = '/multi-results?code=' + code
+                window.location.href = '/multi-challenge?code=' + code
                     + '&prenom=' + sessionStorage.getItem('monPrenom');
             }
 
@@ -151,6 +151,12 @@
         fetch('/room-status?code=' + code)
             .then(res => res.json())
             .then(data => {
+                if (data.status === 'CHALLENGE') {
+                    clearInterval(gamePolling);
+                    window.location.href = '/multi-challenge?code=' + code
+                        + '&prenom=' + prenom;
+                    return;
+                }
                 if (data.status === 'FINISHED') {
                     clearInterval(gamePolling);
                     if (data.cancelled) {

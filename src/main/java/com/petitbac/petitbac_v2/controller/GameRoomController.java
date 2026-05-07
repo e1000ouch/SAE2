@@ -127,6 +127,14 @@ public class GameRoomController {
             );
         }
 
+        if (room.getStatus() == GameRoom.Status.CHALLENGE) {
+            return Map.of(
+                    "status",  "CHALLENGE",
+                    "lettre",  String.valueOf(room.getLettre()),
+                    "joueurs", room.getJoueurs()
+            );
+        }
+
         if (room.getStatus() == GameRoom.Status.PLAYING) {
             return Map.of(
                     "status",  "PLAYING",

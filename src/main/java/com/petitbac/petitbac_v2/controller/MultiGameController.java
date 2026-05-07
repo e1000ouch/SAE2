@@ -91,12 +91,131 @@ public class MultiGameController {
             );
         }
 
-        // Fin de partie
+        // Fin de partie : passe en phase de contestation
         if (room.allAnswered() || room.isTimerExpired()) {
-            finishGame(room, code);
+            startChallengePhase(room, code);
         }
 
         return Map.of("status", "ok");
+    }
+
+    // --- PHASE DE CONTESTATION ---
+
+    @GetMapping("/multi-challenge")
+    public String multiChallenge(
+            @RequestParam String code,
+            @RequestParam String prenom,
+            Model model) {
+
+        GameRoom room = gameRoomService.getRoom(code);
+        if (room == null) return "redirect:/";
+
+        // Si la phase a déjà été conclue, on file aux résultats
+        if (room.isChallengeConcluded()
+                || room.getStatus() == GameRoom.Status.FINISHED) {
+            return "redirect:/multi-results?code=" + code + "&prenom=" + prenom;
+        }
+
+        char lettre = room.getLettre();
+
+        // Construit la liste des mots invalides par joueur
+        Map<String, List<Map<String, Object>>> motsInvalidesParJoueur = new LinkedHashMap<>();
+        for (String joueur : room.getJoueurs()) {
+            List<Map<String, Object>> liste = new ArrayList<>();
+            Map<String, String> rep = room.getReponses()
+                    .getOrDefault(joueur, new HashMap<>());
+
+            for (String cat : CATEGORIES) {
+                String mot = rep.getOrDefault(cat, "").trim();
+                if (mot.isEmpty()) continue;
+                if (wordService.isValid(cat, mot, lettre)) continue;
+
+                Map<String, Object> entree = new HashMap<>();
+                entree.put("categorieId", cat);
+                entree.put("categorieNom", NOMS_CATEGORIES.get(cat));
+                entree.put("mot", mot);
+                entree.put("key", GameRoom.challengeKey(joueur, cat));
+                liste.add(entree);
+            }
+            motsInvalidesParJoueur.put(joueur, liste);
+        }
+
+        model.addAttribute("code",                   code);
+        model.addAttribute("prenom",                 prenom);
+        model.addAttribute("lettre",                 lettre);
+        model.addAttribute("joueurs",                room.getJoueurs());
+        model.addAttribute("motsInvalidesParJoueur", motsInvalidesParJoueur);
+        model.addAttribute("dureeSec",               GameRoom.CHALLENGE_DURATION_MS / 1000);
+
+        return "multi-challenge";
+    }
+
+    @PostMapping("/multi-challenge/vote")
+    @ResponseBody
+    public Map<String, Object> challengeVote(
+            @RequestParam String code,
+            @RequestParam String challenger,
+            @RequestParam String categorie,
+            @RequestParam boolean refused,
+            HttpSession session) {
+
+        String voter = (String) session.getAttribute("prenom");
+        GameRoom room = gameRoomService.getRoom(code);
+        if (room == null || voter == null) {
+            return Map.of("status", "ko");
+        }
+        if (room.isChallengeConcluded()) {
+            return Map.of("status", "closed");
+        }
+
+        room.setRefusal(challenger, categorie, voter, refused);
+
+        // Diffuse l'état mis à jour pour synchroniser tous les clients
+        broadcastChallengeState(room, code);
+
+        // Si le timer a expiré entre temps, on conclut
+        maybeConcludeChallengePhase(room, code);
+
+        return Map.of("status", "ok");
+    }
+
+    @PostMapping("/multi-challenge/done")
+    @ResponseBody
+    public Map<String, Object> challengeDone(
+            @RequestParam String code,
+            @RequestParam(defaultValue = "true") boolean done,
+            HttpSession session) {
+
+        String prenom = (String) session.getAttribute("prenom");
+        GameRoom room = gameRoomService.getRoom(code);
+        if (room == null || prenom == null) {
+            return Map.of("status", "ko");
+        }
+        if (room.isChallengeConcluded()) {
+            return Map.of("status", "closed");
+        }
+
+        if (done) room.markDone(prenom);
+        else      room.unmarkDone(prenom);
+
+        broadcastChallengeState(room, code);
+
+        // Conclut si tous ont fini ou timer expiré
+        maybeConcludeChallengePhase(room, code);
+
+        return Map.of("status", "ok");
+    }
+
+    @GetMapping("/multi-challenge/state")
+    @ResponseBody
+    public Map<String, Object> challengeState(@RequestParam String code) {
+        GameRoom room = gameRoomService.getRoom(code);
+        if (room == null) return Map.of("status", "NOT_FOUND");
+
+        // Conclusion lazy si timer expiré
+        maybeConcludeChallengePhase(room, code);
+
+        return buildChallengeState(room);
     }
 
     // --- RESULTATS ---
@@ -110,7 +229,7 @@ public class MultiGameController {
         if (room == null) return "redirect:/";
 
         Map<String, Integer> scores = scoreService.calculateMultiScores(
-                room, CATEGORIES, room.getJoueurBac()
+                room, CATEGORIES, room.getJoueurBac(), room.getForcedValid()
         );
 
         List<Map<String, Object>> classement = new ArrayList<>();
@@ -146,6 +265,7 @@ public class MultiGameController {
         if (room == null) return "redirect:/";
 
         char lettre = room.getLettre();
+        Set<String> forcedValid = room.getForcedValid();
 
         List<Map<String, Object>> tableau = new ArrayList<>();
         for (String cat : CATEGORIES) {
@@ -157,18 +277,28 @@ public class MultiGameController {
                 Map<String, String> rep = room.getReponses()
                         .getOrDefault(joueur, new HashMap<>());
                 String mot = rep.getOrDefault(cat, "").trim();
-                boolean valide = wordService.isValid(cat, mot, lettre);
+                boolean valideOriginal = wordService.isValid(cat, mot, lettre);
+                boolean force = forcedValid.contains(GameRoom.challengeKey(joueur, cat));
+                boolean valide = valideOriginal || force;
 
-                long nbMemesMots = room.getJoueurs().stream()
-                        .map(j -> room.getReponses()
-                                .getOrDefault(j, new HashMap<>())
-                                .getOrDefault(cat, "").trim().toLowerCase())
+                // Nombre de joueurs avec le même mot valide d'origine
+                // (les forcedValid ne participent pas à la logique de partage)
+                long nbMemesMotsOriginaux = room.getJoueurs().stream()
+                        .map(j -> {
+                            String m = room.getReponses()
+                                    .getOrDefault(j, new HashMap<>())
+                                    .getOrDefault(cat, "").trim().toLowerCase();
+                            return wordService.isValid(cat, m, lettre) ? m : "";
+                        })
                         .filter(m -> !m.isEmpty() && m.equals(mot.toLowerCase()))
                         .count();
 
                 int points = 0;
-                if (valide) {
-                    points = (nbMemesMots == 1)
+                if (force) {
+                    // Contestation gagnée : +1 point fixe
+                    points = 1;
+                } else if (valideOriginal) {
+                    points = (nbMemesMotsOriginaux == 1)
                             ? scoreService.getPointsForLetter(lettre) : 1;
                 } else if (!mot.isEmpty() && joueur.equals(room.getJoueurBac())) {
                     points = ScoreService.PENALITE;
@@ -178,6 +308,7 @@ public class MultiGameController {
                 entree.put("joueur", joueur);
                 entree.put("mot",    mot.isEmpty() ? "(vide)" : mot);
                 entree.put("valide", valide);
+                entree.put("force",  force);
                 entree.put("points", points);
                 entree.put("estMoi", joueur.equals(prenom));
                 motsParJoueur.add(entree);
@@ -200,18 +331,89 @@ public class MultiGameController {
     }
 
 
-    private void finishGame(GameRoom room, String code) {
+    // --- HELPERS PHASE DE CONTESTATION ---
+
+    private void startChallengePhase(GameRoom room, String code) {
+        // Idempotent : ne fait rien si déjà en CHALLENGE ou FINISHED
+        if (room.getStatus() == GameRoom.Status.CHALLENGE
+                || room.getStatus() == GameRoom.Status.FINISHED) {
+            return;
+        }
+        room.setStatus(GameRoom.Status.CHALLENGE);
+        room.startChallengePhase();
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + code,
+                (Object) Map.of(
+                        "type",     "CHALLENGE_PHASE_START",
+                        "dureeSec", GameRoom.CHALLENGE_DURATION_MS / 1000
+                )
+        );
+    }
+
+    private void maybeConcludeChallengePhase(GameRoom room, String code) {
+        if (room.isChallengeConcluded()) return;
+        if (room.getStatus() != GameRoom.Status.CHALLENGE) return;
+        if (!room.allDone() && !room.isChallengePhaseExpired()) return;
+
+        room.concludeChallengePhase(getChallengeableKeys(room));
         gameRoomService.finishRoom(code);
 
-        Map<String,Integer> scores = scoreService.calculateMultiScores(
-                room, CATEGORIES, room.getJoueurBac()
+        Map<String, Integer> scores = scoreService.calculateMultiScores(
+                room, CATEGORIES, room.getJoueurBac(), room.getForcedValid()
         );
 
         messagingTemplate.convertAndSend(
                 "/topic/room/" + code,
-                (Object) Map.of("type", "GAME_OVER", "scores", scores)
+                (Object) Map.of(
+                        "type",        "CHALLENGE_PHASE_OVER",
+                        "scores",      scores,
+                        "forcedValid", new ArrayList<>(room.getForcedValid())
+                )
         );
     }
+
+    private Set<String> getChallengeableKeys(GameRoom room) {
+        Set<String> keys = new HashSet<>();
+        char lettre = room.getLettre();
+        for (String joueur : room.getJoueurs()) {
+            Map<String, String> rep = room.getReponses()
+                    .getOrDefault(joueur, new HashMap<>());
+            for (String cat : CATEGORIES) {
+                String mot = rep.getOrDefault(cat, "").trim();
+                if (mot.isEmpty()) continue;
+                if (wordService.isValid(cat, mot, lettre)) continue;
+                keys.add(GameRoom.challengeKey(joueur, cat));
+            }
+        }
+        return keys;
+    }
+
+    private void broadcastChallengeState(GameRoom room, String code) {
+        Map<String, Object> state = buildChallengeState(room);
+        Map<String, Object> msg = new HashMap<>();
+        msg.put("type", "CHALLENGE_STATE");
+        msg.putAll(state);
+        messagingTemplate.convertAndSend("/topic/room/" + code, (Object) msg);
+    }
+
+    private Map<String, Object> buildChallengeState(GameRoom room) {
+        // Sérialise refusals en Map<String, List<String>>
+        Map<String, List<String>> refusals = new HashMap<>();
+        for (Map.Entry<String, Set<String>> e : room.getRefusals().entrySet()) {
+            refusals.put(e.getKey(), new ArrayList<>(e.getValue()));
+        }
+        Map<String, Object> state = new HashMap<>();
+        state.put("status",       room.getStatus().name());
+        state.put("concluded",    room.isChallengeConcluded());
+        state.put("remainingMs",  room.getChallengeRemainingMs());
+        state.put("doneVoting",   new ArrayList<>(room.getDoneVoting()));
+        state.put("joueursTotal", room.getJoueurs().size());
+        state.put("refusals",     refusals);
+        state.put("forcedValid",  new ArrayList<>(room.getForcedValid()));
+        return state;
+    }
+
 
     // --- UTILITAIRE ---
     private List<Map<String, String>> getCategoriesAvecNoms() {

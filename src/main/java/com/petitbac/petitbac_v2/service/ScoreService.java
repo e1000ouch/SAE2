@@ -27,11 +27,20 @@ public class ScoreService {
         return getPointsForLetter(letter) * validWords;
     }
 
-    // Calcul des scores multijoueur
+    // Surcharge sans contestation (compatibilité)
     public Map<String, Integer> calculateMultiScores(
             GameRoom room,
             List<String> categories,
             String joueurBac) {
+        return calculateMultiScores(room, categories, joueurBac, Collections.emptySet());
+    }
+
+    // Calcul des scores multijoueur, en tenant compte des mots forcés validés
+    public Map<String, Integer> calculateMultiScores(
+            GameRoom room,
+            List<String> categories,
+            String joueurBac,
+            Set<String> forcedValid) {
 
         Map<String, Integer> scores = new HashMap<>();
         char lettre      = room.getLettre();
@@ -50,16 +59,22 @@ public class ScoreService {
                         .getOrDefault(joueur, new HashMap<>());
                 String mot = reponses.getOrDefault(categorie, "").trim();
 
-                boolean valide = wordService.isValid(categorie, mot, lettre);
+                boolean valideOriginal = wordService.isValid(categorie, mot, lettre);
+                boolean force = forcedValid.contains(GameRoom.challengeKey(joueur, categorie));
 
-                if (valide) {
+                if (valideOriginal) {
+                    // Mot valide d'origine : entre dans la logique de partage
                     motValideParJoueur.put(joueur, mot.toLowerCase());
+                } else if (force) {
+                    // Contestation gagnée : +1 point fixe (peu importe la lettre)
+                    scores.merge(joueur, 1, Integer::sum);
                 } else if (!mot.isEmpty() && joueur.equals(joueurBac)) {
+                    // Mot toujours invalide après la phase : pénalité BAC
                     scores.merge(joueur, PENALITE, Integer::sum);
                 }
             }
 
-            // Mot unique → points lettre / Mot partagé → 1pt
+            // Mot valide d'origine : unique → points lettre / partagé → 1pt
             for (Map.Entry<String, String> entry : motValideParJoueur.entrySet()) {
                 String joueur = entry.getKey();
                 String mot    = entry.getValue();
