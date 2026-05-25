@@ -8,6 +8,7 @@ public class GameRoom {
     public enum Status { WAITING, PLAYING, CHALLENGE, FINISHED }
 
     public static final long CHALLENGE_DURATION_MS = 30_000L;
+    private long createdAt;
 
     private String code;
     private List<String> joueurs;
@@ -17,6 +18,7 @@ public class GameRoom {
     private Map<String, Map<String, String>> reponses;
     private String joueurBac;
     private long bacTimestamp;
+
 
     // --- Phase de contestation ---
     // Clé "joueur:categorie" -> ensemble des votants ayant coché "Refuser"
@@ -35,6 +37,7 @@ public class GameRoom {
         this.reponses   = new HashMap<>();
         this.status     = Status.WAITING;
         this.joueurBac  = null;
+        this.createdAt = System.currentTimeMillis();
     }
 
     public boolean addJoueur(String prenom) {
@@ -120,6 +123,8 @@ public class GameRoom {
     public boolean isChallengeConcluded() { return challengeConcluded; }
 
     public Set<String> getForcedValid() { return forcedValid; }
+
+    public long getCreatedAt() { return createdAt; }
 
     /**
      * Fige le résultat de la phase. Idempotent : un seul appel effectif.

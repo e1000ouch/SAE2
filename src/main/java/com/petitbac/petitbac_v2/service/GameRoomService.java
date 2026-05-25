@@ -70,4 +70,8 @@ public class GameRoomService {
         } while (salles.containsKey(code));
         return code;
     }
+    // Ajoute cette méthode dans GameRoomService.java
+    public Map<String, GameRoom> getSalles() {
+        return salles;
+    }
 }
