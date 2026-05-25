@@ -1,9 +1,15 @@
 package com.petitbac.petitbac_v2.controller;
 
+import com.petitbac.petitbac_v2.model.User;
+import com.petitbac.petitbac_v2.repository.UserRepository;
+
+import com.petitbac.petitbac_v2.service.HistoryService;
 import com.petitbac.petitbac_v2.service.ScoreService;
 import com.petitbac.petitbac_v2.service.WordService;
 import com.petitbac.petitbac_v2.service.GameRoomService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +40,8 @@ public class HomeController {
 
     @Autowired
     private WordService wordService;
+    @Autowired
+    private UserRepository userRepository;
 
     // --- PAGE D'ACCUEIL ---
     @GetMapping("/")
@@ -67,13 +75,15 @@ public class HomeController {
 
         return "game";
     }
-
+    @Autowired
+    private HistoryService historyService ;
     // --- SOUMISSION SOLO ---
     @PostMapping("/submit")
     public String submitAnswers(
             @RequestParam Map<String, String> allParams,
             HttpSession session,
-            Model model) {
+            Model model,
+            @AuthenticationPrincipal UserDetails userDetails ){
 
         String prenom = (String) session.getAttribute("prenom");
         char lettre   = (char)   session.getAttribute("lettre");
@@ -108,9 +118,21 @@ public class HomeController {
         model.addAttribute("points",      scoreService.getPointsForLetter(lettre));
         model.addAttribute("maxScore",
                 scoreService.calculateSoloScore(lettre, CATEGORIES.size()));
+        // Sauvegarde si connecté
+        if (userDetails != null) {
+            User user = userRepository.findByUsername(
+                    userDetails.getUsername()).orElse(null);
+            if (user != null) {
+                int maxScore = scoreService.calculateSoloScore(lettre, CATEGORIES.size());
+                historyService.saveSoloGame(
+                        user.getId(), lettre, scoreTotal, maxScore
+                );
+            }
+        }
 
         return "results";
     }
+
 
     // --- REJOUER SOLO ---
     @GetMapping("/start-again")

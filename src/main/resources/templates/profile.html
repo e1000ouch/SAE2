@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Profil</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; }
+        h1, h2 { text-align: center; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #f0f8ff;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .stat-label { color: gray; font-size: 13px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th { background: #4CAF50; color: white; padding: 10px; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; text-align: center; }
+        .gagne   { color: green; font-weight: bold; }
+        .perdu   { color: red; }
+        .solo    { background: #e8f5e9; }
+        .multi   { background: #e3f2fd; }
+        .section { margin: 30px 0; }
+        .nav { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        a.btn {
+            padding: 8px 20px; color: white; text-decoration: none;
+            border-radius: 8px; display: inline-block;
+        }
+        .btn-home   { background: #008CBA; }
+        .btn-logout { background: #f44336; }
+    </style>
+</head>
+<body>
+
+<div class="nav">
+    <a href="/" class="btn btn-home">🏠 Accueil</a>
+    <a href="/logout" class="btn btn-logout">🚪 Déconnexion</a>
+</div>
+
+<h1>👤 <span th:text="${username}"></span></h1>
+
+<!-- Stats globales -->
+<div class="section">
+    <h2>📊 Statistiques globales</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number" th:text="${stats.totalParties}">0</div>
+            <div class="stat-label">Parties jouées</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" th:text="${stats.totalVictoires}">0</div>
+            <div class="stat-label">Victoires</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" th:text="${stats.pourcentageVictoire} + '%'">0%</div>
+            <div class="stat-label">% Victoire</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" th:text="${stats.meilleurScore}">0</div>
+            <div class="stat-label">Meilleur score</div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats par lettre -->
+<div class="section" th:if="${!stats.statsByLettre.isEmpty()}">
+    <h2>🔤 Stats par lettre</h2>
+    <table>
+        <tr>
+            <th>Lettre</th>
+            <th>Parties</th>
+            <th>Victoires</th>
+            <th>% Victoire</th>
+        </tr>
+        <tr th:each="entry : ${stats.statsByLettre}">
+            <td><strong th:text="${entry.key}"></strong></td>
+            <td th:text="${entry.value.parties}"></td>
+            <td th:text="${entry.value.victoires}"></td>
+            <td th:text="${entry.value.pourcentage} + '%'"></td>
+        </tr>
+    </table>
+</div>
+
+<!-- Stats par adversaire -->
+<div class="section" th:if="${!stats.statsByAdversaire.isEmpty()}">
+    <h2>⚔️ Stats par adversaire</h2>
+    <table>
+        <tr>
+            <th>Adversaire</th>
+            <th>Parties</th>
+            <th>Victoires</th>
+            <th>% Victoire</th>
+        </tr>
+        <tr th:each="entry : ${stats.statsByAdversaire}">
+            <td><strong th:text="${entry.key}"></strong></td>
+            <td th:text="${entry.value.parties}"></td>
+            <td th:text="${entry.value.victoires}"></td>
+            <td th:text="${entry.value.pourcentage} + '%'"></td>
+        </tr>
+    </table>
+</div>
+
+<!-- Historique des parties -->
+<div class="section">
+    <h2>📋 Historique des parties</h2>
+    <div th:if="${#lists.isEmpty(historique)}">
+        <p style="text-align:center; color:gray;">
+            Aucune partie jouée pour l'instant !
+        </p>
+    </div>
+    <table th:if="${!#lists.isEmpty(historique)}">
+        <tr>
+            <th>Date</th>
+            <th>Mode</th>
+            <th>Lettre</th>
+            <th>Score</th>
+            <th>Résultat</th>
+            <th>Adversaires</th>
+        </tr>
+        <tr th:each="partie : ${historique}"
+            th:class="${partie.mode == 'solo' ? 'solo' : 'multi'}">
+            <td th:text="${partie.date}"></td>
+            <td th:text="${partie.mode == 'solo' ? '👤 Solo' : '👥 Multi'}"></td>
+            <td><strong th:text="${partie.lettre}"></strong></td>
+            <td th:text="${partie.score} + ' pts'"></td>
+            <td th:class="${partie.gagne ? 'gagne' : 'perdu'}"
+                th:text="${partie.gagne ? '🏆 Victoire' : '❌ Défaite'}">
+            </td>
+            <td>
+                <span th:if="${partie.mode == 'solo'}">—</span>
+                <span th:if="${partie.mode == 'multi' && partie.players != null}">
+                        <span th:each="p, i : ${partie.players}">
+                            <span th:text="${p.username}"></span>
+                            (<span th:text="${p.score}"></span>pts)
+                            <span th:if="${!i.last}">, </span>
+                        </span>
+                    </span>
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>
