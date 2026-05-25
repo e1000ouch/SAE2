@@ -1,7 +1,9 @@
 package com.petitbac.petitbac_v2.controller;
 
 import com.petitbac.petitbac_v2.model.GameRoom;
+import com.petitbac.petitbac_v2.repository.UserRepository;
 import com.petitbac.petitbac_v2.service.GameRoomService;
+import com.petitbac.petitbac_v2.service.HistoryService;
 import com.petitbac.petitbac_v2.service.ScoreService;
 import com.petitbac.petitbac_v2.service.WordService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +32,10 @@ public class MultiGameController {
 
     @Autowired
     private GameRoomService gameRoomService;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private HistoryService historyService;
 
     @Autowired
     private ScoreService scoreService;
@@ -242,6 +248,21 @@ public class MultiGameController {
                     ligne.put("estMoi", entry.getKey().equals(prenom));
                     classement.add(ligne);
                 });
+        for (String username : room.getJoueurs()) {
+            userRepository.findByUsername(username).ifPresent(user -> {
+                historyService.saveMultiGame(
+                        user.getId(),
+                        room.getLettre(),
+                        scores.getOrDefault(username, 0),
+                        scores,
+                        username
+                );
+            });
+            messagingTemplate.convertAndSend(
+                    "/topic/room/" + code,
+                    (Object) Map.of("type", "GAME_OVER", "scores", scores)
+            );
+        }
 
         model.addAttribute("classement", classement);
         model.addAttribute("lettre",     room.getLettre());
