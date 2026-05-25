@@ -14,6 +14,10 @@
 <body>
 <h1>🔑 Connexion</h1>
 
+<p th:if="${param.registered}" style="color: green;">
+    Compte créé ! Vous pouvez vous connecter.
+</p>
+
 <p th:if="${param.error}" class="erreur">Identifiants incorrects !</p>
 <p th:if="${param.logout}">Vous avez été déconnecté.</p>
 
