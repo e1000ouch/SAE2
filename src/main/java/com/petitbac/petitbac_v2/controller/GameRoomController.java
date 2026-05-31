@@ -3,6 +3,7 @@ package com.petitbac.petitbac_v2.controller;
 import com.petitbac.petitbac_v2.model.GameRoom;
 import com.petitbac.petitbac_v2.service.GameRoomService;
 import com.petitbac.petitbac_v2.service.ScoreService;
+import com.petitbac.petitbac_v2.service.ValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -22,6 +23,8 @@ public class GameRoomController {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private ValidationService validationService;
 
     // --- PAGE LOBBY ---
     @GetMapping("/lobby")
@@ -34,7 +37,15 @@ public class GameRoomController {
     public String createRoom(
             @RequestParam String prenom,
             @RequestParam int maxJoueurs,
-            HttpSession session) {
+            HttpSession session, Model model) {
+        // Validation prénom
+        if (!validationService.isValidPrenom(prenom)) {
+            model.addAttribute("erreur",
+                    "Le prénom doit faire entre 2 et 20 caractères (lettres et chiffres uniquement).");
+            return "lobby";
+        }
+
+
 
         GameRoom room = gameRoomService.createRoom(prenom, maxJoueurs);
 
@@ -53,8 +64,21 @@ public class GameRoomController {
             HttpSession session,
             Model model) {
 
+
         String upperCode = code.toUpperCase();
         GameRoom room    = gameRoomService.getRoom(upperCode);
+        // Validation prénom
+        if (!validationService.isValidPrenom(prenom)) {
+            model.addAttribute("erreur",
+                    "Le prénom doit faire entre 2 et 20 caractères.");
+            return "lobby";
+        }
+
+        // Validation code
+        if (!validationService.isValidRoomCode(upperCode)) {
+            model.addAttribute("erreur", "Code de salle invalide !");
+            return "lobby";
+        }
 
         if (room == null) {
             model.addAttribute("erreur", "Salle introuvable !");
@@ -85,7 +109,9 @@ public class GameRoomController {
                     "/topic/room/" + code.toUpperCase(),
                     Optional.of(Map.of("type", "GAME_START", "lettre", String.valueOf(room.getLettre())))
             );
+
         }
+
 
         return "redirect:/waiting?code=" + upperCode + "&prenom=" + prenom;
     }

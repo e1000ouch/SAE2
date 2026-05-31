@@ -16,8 +16,16 @@
 <p th:if="${erreur}" style="color: red;" th:text="${erreur}"></p>
 
 <form action="/register" method="post">
-    <div><input type="text"     name="username" placeholder="Nom d'utilisateur" required/></div>
-    <div><input type="password" name="password" placeholder="Mot de passe"      required/></div>
+    <div><input type="text"     name="username" placeholder="Nom d'utilisateur" required/>
+        <small style="color: gray; display: block; margin-top: 4px;">
+            3 à 20 caractères, lettres/chiffres/underscore
+        </small>
+    </div>
+    <div><input type="password" name="password" placeholder="Mot de passe" minlength="6" required/>
+        <small style="color: gray; display: block; margin-top: 4px;">
+            Minimum 6 caractères
+        </small>
+    </div>
     <button type="submit">Créer mon compte</button>
 </form>
 

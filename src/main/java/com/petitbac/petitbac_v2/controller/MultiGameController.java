@@ -2,10 +2,7 @@ package com.petitbac.petitbac_v2.controller;
 
 import com.petitbac.petitbac_v2.model.GameRoom;
 import com.petitbac.petitbac_v2.repository.UserRepository;
-import com.petitbac.petitbac_v2.service.GameRoomService;
-import com.petitbac.petitbac_v2.service.HistoryService;
-import com.petitbac.petitbac_v2.service.ScoreService;
-import com.petitbac.petitbac_v2.service.WordService;
+import com.petitbac.petitbac_v2.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -45,6 +42,8 @@ public class MultiGameController {
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    ValidationService validationService ;
 
     // --- PAGE DE JEU ---
     @GetMapping("/multi-game")
@@ -133,6 +132,11 @@ public class MultiGameController {
 
             for (String cat : CATEGORIES) {
                 String mot = rep.getOrDefault(cat, "").trim();
+                // Accepte les mots valides ou vides (vide = 0 point)
+                if (!mot.isEmpty() && !validationService.isValidWord(mot)) {
+                    mot = ""; // mot invalide → traité comme vide
+                }
+
                 if (mot.isEmpty()) continue;
                 if (wordService.isValid(cat, mot, lettre)) continue;
 

@@ -2,6 +2,8 @@ package com.petitbac.petitbac_v2.controller;
 
 import com.petitbac.petitbac_v2.model.User;
 import com.petitbac.petitbac_v2.repository.UserRepository;
+import com.petitbac.petitbac_v2.service.ValidationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,11 +30,25 @@ public class UserController {
         return "register";
     }
 
+    @Autowired
+    private ValidationService validationService;
+
     @PostMapping("/register")
     public String register(
             @RequestParam String username,
             @RequestParam String password,
             Model model) {
+        String usernameError = validationService.getUsernameError(username);
+        if (usernameError != null) {
+            model.addAttribute("erreur", usernameError);
+            return "register";
+        }
+        // Validation password
+        String passwordError = validationService.getPasswordError(password);
+        if (passwordError != null) {
+            model.addAttribute("erreur", passwordError);
+            return "register";
+        }
 
         // Vérifie si le username existe déjà
         if (userRepository.findByUsername(username).isPresent()) {

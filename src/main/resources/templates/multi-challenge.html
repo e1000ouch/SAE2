@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Petit Bac - Phase de contestation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1100px;
+            margin: 30px auto;
+            text-align: center;
+            padding: 0 15px;
+        }
+        h1 { margin-bottom: 5px; }
+        .lettre {
+            display: inline-block;
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 0 6px;
+        }
+        .intro {
+            background: #f0f8ff;
+            border: 1px solid #b3d4fc;
+            padding: 12px 18px;
+            border-radius: 8px;
+            margin: 15px auto 25px;
+            max-width: 800px;
+            font-size: 14px;
+            line-height: 1.5;
+            text-align: left;
+        }
+        .intro strong { color: #d32f2f; }
+
+        .barre-haut {
+            position: sticky;
+            top: 0;
+            background: white;
+            padding: 12px 0;
+            border-bottom: 2px solid #ddd;
+            z-index: 10;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .timer-box {
+            background: #ffe0e0;
+            border: 2px solid red;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 18px;
+            font-weight: bold;
+            color: red;
+        }
+        .compteur-fini {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        .btn-fini {
+            padding: 10px 22px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        .btn-fini.actif { background-color: #888; }
+        .btn-fini:disabled { background-color: #aaa; cursor: not-allowed; }
+
+        .colonnes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .colonne {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .colonne.moi {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        .colonne h3 {
+            margin: 0 0 10px;
+            font-size: 16px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 6px;
+        }
+        .mot-ligne {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 8px;
+            margin: 6px 0;
+            text-align: left;
+        }
+        .mot-cat {
+            font-size: 11px;
+            color: #777;
+            text-transform: uppercase;
+        }
+        .mot-valeur {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin: 2px 0 6px;
+        }
+        .mot-vote {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .mot-vote input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .mot-vote label { cursor: pointer; user-select: none; }
+        .mot-vote.refuse-on { color: #d32f2f; font-weight: bold; }
+
+        .vote-info {
+            font-size: 12px;
+            color: #555;
+            margin-top: 4px;
+        }
+        .vote-info.danger { color: #d32f2f; font-weight: bold; }
+        .vote-info.ok     { color: #388e3c; }
+
+        .ma-ligne {
+            font-size: 12px;
+            font-style: italic;
+            color: #555;
+            padding: 4px 0 0;
+        }
+        .vide {
+            color: #888;
+            font-style: italic;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<h1>⚖️ Phase de contestation</h1>
+<p>
+    Lettre :<span class="lettre" th:text="${lettre}"></span>
+</p>
+
+<div class="intro">
+    Voici les mots <strong>refusés par le jeu</strong>. Pour chaque mot des
+    <em>autres joueurs</em>, vous pouvez cocher la case
+    <strong>« ❌ Refuser »</strong> si vous estimez que le mot ne doit pas être validé.<br>
+    À la fin de la phase, un mot sera <strong>forcé en validé</strong>
+    (et les points ajoutés) si <strong>aucun joueur</strong> ne l'a refusé.<br>
+    Vous pouvez modifier vos votes tant que la phase n'est pas terminée.
+</div>
+
+<div class="barre-haut">
+    <div class="timer-box">
+        ⏱️ Temps restant : <span id="timer-count">--</span>s
+    </div>
+    <div class="compteur-fini">
+        ✅ <span id="nb-fini">0</span>/<span id="nb-total" th:text="${#lists.size(joueurs)}"></span>
+        joueurs ont terminé
+    </div>
+    <button id="btn-fini" class="btn-fini" onclick="toggleFini()">
+        J'ai fini ✓
+    </button>
+</div>
+
+<div class="colonnes">
+    <div th:each="joueur : ${joueurs}"
+         class="colonne"
+         th:classappend="${joueur == prenom ? 'moi' : ''}">
+
+        <h3 th:text="${joueur + (joueur == prenom ? ' (moi)' : '')}"></h3>
+
+        <div th:with="mots=${motsInvalidesParJoueur.get(joueur)}">
+            <div th:if="${#lists.isEmpty(mots)}" class="vide">
+                Aucun mot refusé 🎉
+            </div>
+
+            <div th:each="m : ${mots}"
+                 class="mot-ligne"
+                 th:attr="data-key=${m.key}">
+                <div class="mot-cat" th:text="${m.categorieNom}"></div>
+                <div class="mot-valeur" th:text="${m.mot}"></div>
+
+                <!-- Mes propres mots : pas de case, juste indication -->
+                <div th:if="${joueur == prenom}" class="ma-ligne">
+                    En attente du vote des autres joueurs...
+                </div>
+
+                <!-- Mots des autres : case "Refuser" -->
+                <div th:if="${joueur != prenom}" class="mot-vote">
+                    <input type="checkbox"
+                           th:id="|cb-${m.key}|"
+                           th:attr="data-challenger=${joueur},data-categorie=${m.categorieId}"
+                           onchange="onVote(this)">
+                    <label th:for="|cb-${m.key}|">❌ Refuser ce mot</label>
+                </div>
+
+                <div class="vote-info"
+                     th:id="|info-${m.key}|">
+                    0 refus
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const code   = [[${code}]];
+    const prenom = [[${prenom}]];
+    const dureeSec = [[${dureeSec}]];
+    sessionStorage.setItem('monPrenom', prenom);
+
+    let finiLocal     = false;
+    let phaseConcluded = false;
+    let timerInterval = null;
+
+    // --- WebSocket ---
+    const socket = new SockJS(window.location.origin + '/ws');
+    const stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function () {
+        stompClient.subscribe('/topic/room/' + code, function (message) {
+            const data = JSON.parse(message.body);
+
+            if (data.type === 'CHALLENGE_STATE') {
+                applyState(data);
+            }
+
+            if (data.type === 'CHALLENGE_PHASE_OVER') {
+                phaseConcluded = true;
+                clearInterval(timerInterval);
+                window.location.href = '/multi-results?code=' + code
+                        + '&prenom=' + prenom;
+            }
+
+            if (data.type === 'GAME_CANCELLED') {
+                clearInterval(timerInterval);
+                alert('🚪 ' + data.joueur + ' a quitté la partie. La partie est annulée !');
+                window.location.href = '/';
+            }
+        });
+
+        // État initial
+        fetchState();
+    });
+
+    // --- Polling de secours (si WS rate un message) ---
+    setInterval(fetchState, 3000);
+
+    function fetchState() {
+        if (phaseConcluded) return;
+        fetch('/multi-challenge/state?code=' + encodeURIComponent(code))
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'NOT_FOUND') return;
+                if (data.concluded) {
+                    phaseConcluded = true;
+                    window.location.href = '/multi-results?code=' + code
+                            + '&prenom=' + prenom;
+                    return;
+                }
+                applyState(data);
+            })
+            .catch(() => {});
+    }
+
+    function applyState(data) {
+        // Timer
+        if (typeof data.remainingMs === 'number') {
+            startOrSyncTimer(Math.ceil(data.remainingMs / 1000));
+        }
+
+        // Compteur "fini"
+        const done = data.doneVoting || [];
+        document.getElementById('nb-fini').textContent = done.length;
+        document.getElementById('nb-total').textContent = data.joueursTotal;
+
+        // Synchronise le bouton "J'ai fini" avec l'état serveur
+        finiLocal = done.indexOf(prenom) !== -1;
+        const btn = document.getElementById('btn-fini');
+        btn.classList.toggle('actif', finiLocal);
+        btn.textContent = finiLocal ? '↩ Annuler "J\'ai fini"' : 'J\'ai fini ✓';
+
+        // Refusals : nombre de refus par mot + (re)cocher ma case si je suis dedans
+        const refusals = data.refusals || {};
+        document.querySelectorAll('.mot-ligne').forEach(div => {
+            const key = div.getAttribute('data-key');
+            const refusers = refusals[key] || [];
+            const info = document.getElementById('info-' + key);
+            if (info) {
+                info.textContent = refusers.length + ' refus';
+                info.classList.toggle('danger', refusers.length > 0);
+                info.classList.toggle('ok',     refusers.length === 0);
+            }
+            const cb = document.getElementById('cb-' + key);
+            if (cb) {
+                const iRefuse = refusers.indexOf(prenom) !== -1;
+                if (cb.checked !== iRefuse) cb.checked = iRefuse;
+                cb.parentElement.classList.toggle('refuse-on', iRefuse);
+            }
+        });
+    }
+
+    function onVote(cb) {
+        const challenger = cb.getAttribute('data-challenger');
+        const categorie  = cb.getAttribute('data-categorie');
+        const refused    = cb.checked;
+        cb.parentElement.classList.toggle('refuse-on', refused);
+
+        const params = new URLSearchParams();
+        params.append('code', code);
+        params.append('challenger', challenger);
+        params.append('categorie', categorie);
+        params.append('refused', refused);
+
+        fetch('/multi-challenge/vote', {
+            method: 'POST',
+            body: params
+        });
+    }
+
+    function toggleFini() {
+        const newState = !finiLocal;
+        const params = new URLSearchParams();
+        params.append('code', code);
+        params.append('done', newState);
+
+        fetch('/multi-challenge/done', {
+            method: 'POST',
+            body: params
+        });
+    }
+
+    // --- Timer côté client ---
+    function startOrSyncTimer(remainingSec) {
+        const span = document.getElementById('timer-count');
+        span.textContent = remainingSec;
+
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            const cur = parseInt(span.textContent, 10) || 0;
+            const next = Math.max(0, cur - 1);
+            span.textContent = next;
+            if (next <= 0) {
+                clearInterval(timerInterval);
+                // À 0 on rappelle l'état serveur pour déclencher la conclusion
+                fetchState();
+            }
+        }, 1000);
+    }
+</script>
+</body>
+</html>
