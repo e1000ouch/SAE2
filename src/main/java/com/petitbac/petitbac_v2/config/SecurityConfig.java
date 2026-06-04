@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,6 +38,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        System.out.println("=== SecurityConfig chargé ===");
+        System.out.println("=== /images/** est autorisé ===");
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authenticationProvider(authenticationProvider())
@@ -48,16 +51,18 @@ public class SecurityConfig {
                 .authorizeHttpRequests(registry -> {
                     // Pages accessibles sans connexion
                     registry.requestMatchers(
-                            "/",           // accueil
-                            "/solo",       // mode solo
-                            "/start",      // démarrage solo
-                            "/submit",     // soumission solo
-                            "/start-again",// rejouer solo
-                            "/login",      // connexion
-                            "/register",   // inscription
-                            "/css/**",     // styles
-                            "/js/**",      // scripts
-                            "/ws/**"       // websocket
+                            "/",
+                            "/solo",
+                            "/start",
+                            "/submit",
+                            "/start-again",
+                            "/login",
+                            "/register",
+                            "/css/**",
+                            "/images/**",
+                            "/js/**",
+                            "/ws/**",
+                            "/favicon.ico"
                     ).permitAll();
 
                     // Tout le reste nécessite une connexion
