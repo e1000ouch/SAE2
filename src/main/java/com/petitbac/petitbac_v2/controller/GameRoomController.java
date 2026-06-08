@@ -6,6 +6,8 @@ import com.petitbac.petitbac_v2.service.ScoreService;
 import com.petitbac.petitbac_v2.service.ValidationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -62,11 +64,20 @@ public class GameRoomController {
             @RequestParam String prenom,
             @RequestParam String code,
             HttpSession session,
-            Model model) {
+            Model model,
+            @AuthenticationPrincipal UserDetails userDetails){
 
 
         String upperCode = code.toUpperCase();
         GameRoom room    = gameRoomService.getRoom(upperCode);
+        if (userDetails != null) {
+            String username = userDetails.getUsername();
+            if (room != null && room.getJoueurs().contains(username)) {
+                model.addAttribute("erreur",
+                        "Ce compte est déjà dans cette salle !");
+                return "lobby";
+            }
+        }
         // Validation prénom
         if (!validationService.isValidPrenom(prenom)) {
             model.addAttribute("erreur",

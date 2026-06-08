@@ -84,6 +84,19 @@ public class MultiGameController {
 
         // Si ce joueur crie BAC!
         if (criedBac) {
+            if (criedBac) {
+                // Vérifie qu'il y a au moins un autre joueur connecté
+                if (room.getJoueurs().size() < 2) {
+                    return Map.of("status", "error",
+                            "message", "Impossible de crier BAC seul !");
+                }
+                room.setBac(prenom);
+                room.setStatus(GameRoom.Status.PLAYING);
+                messagingTemplate.convertAndSend(
+                        "/topic/room/" + code,
+                        (Object) Map.of("type", "BAC_CRIED", "joueur", prenom, "timer", 30)
+                );
+            }
             room.setBac(prenom);
             room.setStatus(GameRoom.Status.PLAYING);
             messagingTemplate.convertAndSend(
