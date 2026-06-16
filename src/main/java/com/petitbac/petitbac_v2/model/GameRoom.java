@@ -7,7 +7,7 @@ public class GameRoom {
 
     public enum Status { WAITING, PLAYING, CHALLENGE, FINISHED }
 
-    public static final long CHALLENGE_DURATION_MS = 30_000L;
+    public static final long CHALLENGE_DURATION_MS = 300_000L; // 5 minutes
     private long createdAt;
 
     private String code;

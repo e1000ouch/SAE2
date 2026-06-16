@@ -42,6 +42,17 @@
 <h1>🎯 Petit Bac</h1>
 <p th:if="${erreur}" class="erreur" th:text="${erreur}"></p>
 
+<!-- Adresse fixe a donner une seule fois aux joueurs du meme Wi-Fi -->
+<div class="card" th:if="${serveurUrl != null and !serveurUrl.isEmpty()}"
+     style="background:#f0f8ff;border-color:#008CBA;">
+    <p style="margin:0 0 6px;">📡 Pour rejoindre depuis un autre appareil du même Wi-Fi :</p>
+    <p style="margin:0;font-size:20px;font-weight:bold;color:#008CBA;"
+       th:text="${serveurUrl}"></p>
+    <p style="margin:6px 0 0;font-size:13px;color:gray;">
+        À taper une seule fois dans le navigateur, puis seul le code de salle suffit.
+    </p>
+</div>
+
 <!-- Créer une salle -->
 <div class="card">
     <h2>➕ Créer une salle</h2>

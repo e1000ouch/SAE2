@@ -39,6 +39,12 @@
 
 <div class="code" th:text="${code}"></div>
 
+<p th:if="${serveurUrl != null and !serveurUrl.isEmpty()}"
+   style="color:#008CBA;font-size:14px;">
+    Sur un autre appareil du même Wi-Fi, ouvrir
+    <strong th:text="${serveurUrl}"></strong> puis entrer ce code.
+</p>
+
 <h3>Joueurs connectés :</h3>
 <ul class="joueurs-liste" id="joueurs-liste">
     <li th:each="j : ${joueurs}" th:text="${j}"></li>

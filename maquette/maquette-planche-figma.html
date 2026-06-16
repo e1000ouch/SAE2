@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petit Bac — Planche tous écrans (pour import Figma)</title>
+<!--
+  VERSION "PLANCHE" : tous les écrans sont visibles, rendus en statique,
+  empilés verticalement et étiquetés. Sert à :
+   - l'import dans Figma via le plugin html.to.design (capture toute la page d'un coup) ;
+   - de référence visuelle posée à côté pendant la construction manuelle.
+  Aucune interactivité ici (volontaire) : tout est pré-rendu pour s'importer proprement.
+-->
+<style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background:#2b2f36; margin:0; padding:30px 16px 80px; color:#222; }
+    .page-title { color:#fff; text-align:center; max-width:1000px; margin:0 auto 30px; }
+    .page-title h1 { margin:0 0 6px; font-size:22px; }
+    .page-title p { margin:0; color:#9aa4b1; font-size:13px; }
+
+    .board { max-width:1000px; margin:0 auto 46px; }
+    .board.large { max-width:1160px; }
+    .board-label { color:#6cd07f; font-weight:bold; font-size:15px; }
+    .board-tag { display:inline-block; background:#2f6f3e; color:#fff; font-size:10px; padding:1px 8px; border-radius:10px; margin-left:8px; vertical-align:middle; }
+    .board-desc { color:#cfd6df; font-size:12px; margin:3px 0 10px; line-height:1.45; max-width:920px; }
+
+    .device { background:#fff; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,.4); padding:18px 0 40px; }
+    .wrap { margin:24px auto; text-align:center; padding:0 15px; }
+    .wrap-400{max-width:400px;} .wrap-500{max-width:500px;} .wrap-550{max-width:550px;}
+    .wrap-650{max-width:650px;} .wrap-700{max-width:700px;} .wrap-1100{max-width:1100px;}
+
+    /* ====== STYLES REPRIS DES ÉCRANS RÉELS ====== */
+    h1 { font-size:28px; } h2{font-size:20px;}
+    .lettre { font-weight:bold; color:#4CAF50; line-height:1; }
+    .lettre.geante { font-size:100px; }
+    .points-lettre { background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:8px; margin:10px auto 20px; font-size:14px; max-width:400px; }
+
+    input, select { padding:8px; margin:8px; font-size:16px; border:2px solid #ddd; border-radius:6px; }
+    .field-200{width:200px;} .field-250{width:250px;}
+
+    button, a.btn { padding:10px 20px; color:#fff; border:none; font-size:16px; cursor:pointer; border-radius:8px; text-decoration:none; display:inline-block; margin:5px; }
+    .btn-green{background:#4CAF50;} .btn-blue{background:#008CBA;} .btn-red{background:#f44336;}
+    .btn-orange{background:#ff9800;} .btn-bac{background:#ff5722;}
+    .btn-disabled{background:#aaa;} button:disabled{background:#aaa;}
+
+    .card { border:2px solid #ddd; border-radius:12px; padding:22px; margin:18px auto; max-width:460px; }
+    .nav-jeu { display:flex; justify-content:flex-end; gap:10px; margin:0 20px 10px; }
+    .lock-msg{color:#888;font-size:13px;margin-top:8px;} .erreur{color:red;}
+
+    .categorie-row { display:flex; align-items:center; margin:10px 0; gap:10px; }
+    .categorie-row label { width:160px; text-align:right; font-weight:bold; font-size:15px; }
+    .categorie-row input { flex:1; margin:0; }
+
+    table { width:100%; border-collapse:collapse; margin:18px 0; }
+    th { background:#4CAF50; color:#fff; padding:10px; } th.moi{background:#ff9800;}
+    td { padding:10px; border-bottom:1px solid #ddd; }
+    td.categorie { font-weight:bold; text-align:left; background:#f5f5f5; }
+    .valide{color:green;font-weight:bold;} .invalide{color:red;} .penalite{color:orange;}
+    .points{font-size:12px;color:gray;}
+
+    .score-box { background:#f0f8ff; border:2px solid #4CAF50; border-radius:10px; padding:20px; margin:20px auto; font-size:20px; max-width:420px; }
+
+    .code { font-size:48px; font-weight:bold; color:#4CAF50; letter-spacing:8px; margin:18px 0; }
+    .joueurs-liste { list-style:none; padding:0; max-width:300px; margin:0 auto; }
+    .joueurs-liste li { padding:8px; margin:5px 0; background:#f0f8ff; border-radius:6px; font-size:18px; }
+    .attente{color:gray;font-style:italic;}
+
+    .bac-notif { background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:10px; margin:10px auto; max-width:420px; }
+    .timer-box { background:#ffe0e0; border:2px solid red; border-radius:8px; padding:10px; margin:10px auto; font-size:20px; font-weight:bold; color:red; max-width:300px; }
+
+    .podium { background:#f0f8ff; border:2px solid #4CAF50; border-radius:10px; padding:20px; margin:20px auto; max-width:480px; }
+    .podium-ligne { display:flex; justify-content:space-between; align-items:center; padding:8px 20px; margin:5px 0; border-radius:6px; font-size:18px; }
+    .premier{background:#ffd700;font-weight:bold;} .moi{background:#fff3cd;font-weight:bold;}
+
+    .intro { background:#f0f8ff; border:1px solid #b3d4fc; padding:12px 18px; border-radius:8px; margin:15px auto 25px; max-width:800px; font-size:14px; line-height:1.5; text-align:left; }
+    .intro strong{color:#d32f2f;}
+    .barre-haut { background:#fff; padding:12px 0; border-bottom:2px solid #ddd; display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:10px; }
+    .compteur-fini { background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:8px 16px; font-size:14px; }
+    .btn-fini { padding:10px 22px; background:#4CAF50; color:#fff; border:none; font-size:16px; border-radius:8px; }
+    .colonnes { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:15px; margin-top:25px; }
+    .colonne { background:#fafafa; border:1px solid #ddd; border-radius:8px; padding:12px; }
+    .colonne.moi { background:#fff3cd; border-color:#ffc107; }
+    .colonne h3 { margin:0 0 10px; font-size:16px; text-align:center; border-bottom:1px solid #ddd; padding-bottom:6px; }
+    .mot-ligne { background:#fff; border:1px solid #eee; border-radius:6px; padding:8px; margin:6px 0; text-align:left; }
+    .mot-cat { font-size:11px; color:#777; text-transform:uppercase; }
+    .mot-valeur { font-size:16px; font-weight:bold; color:#333; margin:2px 0 6px; }
+    .mot-vote { display:flex; align-items:center; gap:8px; font-size:13px; }
+    .mot-vote input[type=checkbox]{ width:18px; height:18px; }
+    .vote-info{font-size:12px;color:#555;margin-top:4px;} .vote-info.ok{color:#388e3c;} .vote-info.danger{color:#d32f2f;font-weight:bold;}
+    .ma-ligne{font-size:12px;font-style:italic;color:#555;padding:4px 0 0;}
+    .vide{color:#888;font-style:italic;font-size:13px;text-align:center;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<div class="page-title">
+    <h1>Petit Bac — Planche de tous les écrans</h1>
+    <p>14 vues (12 écrans + 2 états alternatifs). Pour import Figma (html.to.design) ou référence visuelle.</p>
+</div>
+
+<!-- ============ 4.1a ACCUEIL — ANONYME ============ -->
+<div class="board">
+    <div class="board-label">4.1a — Accueil <span class="board-tag">visiteur anonyme</span></div>
+    <p class="board-desc">Navigation contextuelle. Anonyme → Connexion/Inscription. Solo libre, Multi grisé (connexion requise).</p>
+    <div class="device"><div class="wrap wrap-500">
+        <div class="nav-jeu">
+            <a class="btn btn-blue">🔑 Connexion</a>
+            <a class="btn btn-green">📝 Inscription</a>
+        </div>
+        <h1>🎯 Petit Bac</h1>
+        <p>Choisis ton mode de jeu !</p>
+        <div class="card">
+            <h2>👤 Solo</h2><p>Joue seul contre le dictionnaire</p>
+            <a class="btn btn-green">Jouer en solo 🚀</a>
+        </div>
+        <div class="card">
+            <h2>👥 Multijoueur</h2><p>Crée ou rejoins une salle avec des amis</p>
+            <a class="btn btn-disabled">Jouer en multi 🎮</a>
+            <p class="lock-msg">🔒 Connexion requise pour jouer en multijoueur</p>
+        </div>
+    </div></div>
+</div>
+
+<!-- ============ 4.1b ACCUEIL — CONNECTÉ ============ -->
+<div class="board">
+    <div class="board-label">4.1b — Accueil <span class="board-tag">connecté</span></div>
+    <p class="board-desc">Connecté → Profil (nom) + Déconnexion. Multi actif (bleu).</p>
+    <div class="device"><div class="wrap wrap-500">
+        <div class="nav-jeu">
+            <a class="btn btn-orange">👤 emilien</a>
+            <a class="btn btn-red">🚪 Déconnexion</a>
+        </div>
+        <h1>🎯 Petit Bac</h1>
+        <p>Choisis ton mode de jeu !</p>
+        <div class="card">
+            <h2>👤 Solo</h2><p>Joue seul contre le dictionnaire</p>
+            <a class="btn btn-green">Jouer en solo 🚀</a>
+        </div>
+        <div class="card">
+            <h2>👥 Multijoueur</h2><p>Crée ou rejoins une salle avec des amis</p>
+            <a class="btn btn-blue">Jouer en multi 🎮</a>
+        </div>
+    </div></div>
+</div>
+
+<!-- ============ 4.2 CONNEXION ============ -->
+<div class="board">
+    <div class="board-label">4.2 — Connexion <span class="board-tag">état erreur affiché</span></div>
+    <p class="board-desc">Identifiant + mot de passe. États : normal / erreur (« Identifiants incorrects ») / déconnecté.</p>
+    <div class="device"><div class="wrap wrap-400">
+        <h1>🔑 Connexion</h1>
+        <p class="erreur">Identifiants incorrects !</p>
+        <div><input type="text" class="field-250" placeholder="Nom d'utilisateur"></div>
+        <div><input type="password" class="field-250" placeholder="Mot de passe"></div>
+        <button class="btn-blue">Se connecter</button>
+        <p>Pas encore de compte ? <a style="color:#008CBA">S'inscrire</a></p>
+        <p><a style="color:#008CBA">← Retour accueil</a></p>
+    </div></div>
+</div>
+
+<!-- ============ 4.3 INSCRIPTION ============ -->
+<div class="board">
+    <div class="board-label">4.3 — Inscription</div>
+    <p class="board-desc">Identifiant + mot de passe → compte créé → redirection connexion.</p>
+    <div class="device"><div class="wrap wrap-400">
+        <h1>📝 Inscription</h1>
+        <div><input type="text" class="field-250" placeholder="Nom d'utilisateur"></div>
+        <div><input type="password" class="field-250" placeholder="Mot de passe"></div>
+        <button class="btn-green">Créer mon compte</button>
+        <p>Déjà un compte ? <a style="color:#008CBA">Se connecter</a></p>
+        <p><a style="color:#008CBA">← Retour accueil</a></p>
+    </div></div>
+</div>
+
+<!-- ============ 4.4 SOLO — SAISIE PRÉNOM ============ -->
+<div class="board">
+    <div class="board-label">4.4 — Solo · Saisie prénom</div>
+    <p class="board-desc">Saisie du prénom avant la partie solo.</p>
+    <div class="device"><div class="wrap wrap-500">
+        <h1>🎯 Petit Bac</h1>
+        <p>Entre ton prénom pour commencer !</p>
+        <div><input type="text" class="field-250" placeholder="Ton prénom..." value="Émilien"></div>
+        <button class="btn-green">Jouer 🚀</button>
+    </div></div>
+</div>
+
+<!-- ============ 4.5 SOLO — JEU ============ -->
+<div class="board">
+    <div class="board-label">4.5 — Solo · Jeu</div>
+    <p class="board-desc">Lettre tirée + points. 6 catégories. Valider / Quitter.</p>
+    <div class="device"><div class="wrap wrap-550">
+        <h1>🎯 Petit Bac</h1>
+        <p>Bonne chance <strong>Émilien</strong> !</p>
+        <div class="lettre geante">B</div>
+        <div class="points-lettre">⭐ Cette lettre vaut <strong>2</strong> point(s) par mot valide !</div>
+        <div class="categorie-row"><label>Prénom</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Animal</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Fruit</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Légume</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Capitales &amp; Pays</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Métier</label><input placeholder="Commence par B..."></div>
+        <button class="btn-green">Valider 🎯</button>
+        <div style="margin-top:15px;"><a class="btn btn-red" style="font-size:14px;padding:8px 20px;">🚪 Quitter la partie</a></div>
+    </div></div>
+</div>
+
+<!-- ============ 4.6 SOLO — RÉSULTATS ============ -->
+<div class="board">
+    <div class="board-label">4.6 — Solo · Résultats <span class="board-tag">3 statuts</span></div>
+    <p class="board-desc">Vérification mot par mot : valide / mauvaise lettre / mot inconnu. Score /max.</p>
+    <div class="device"><div class="wrap wrap-550">
+        <h1>🎯 Résultats</h1>
+        <p>Lettre : <strong>B</strong> — <strong>2</strong> pt(s) par mot valide</p>
+        <table>
+            <tr><th>Catégorie</th><th>Ton mot</th><th>Résultat</th></tr>
+            <tr><td>Prénom</td><td>Brice</td><td><span class="valide">✅ +2 pts</span></td></tr>
+            <tr><td>Animal</td><td>Boa</td><td><span class="valide">✅ +2 pts</span></td></tr>
+            <tr><td>Fruit</td><td>Ananas</td><td><span class="invalide">❌ Mauvaise lettre</span></td></tr>
+            <tr><td>Légume</td><td>Brocoli</td><td><span class="valide">✅ +2 pts</span></td></tr>
+            <tr><td>Capitales &amp; Pays</td><td>Bzzz</td><td><span class="invalide">❌ Mot inconnu</span></td></tr>
+            <tr><td>Métier</td><td>(vide)</td><td><span class="invalide">❌ Mot inconnu</span></td></tr>
+        </table>
+        <div class="score-box">🏆 Score : <strong>6</strong> / 12 pts (3 / 6 mots valides)</div>
+        <div>
+            <a class="btn btn-green">🔄 Rejouer</a>
+            <a class="btn btn-blue">🏠 Accueil</a>
+        </div>
+    </div></div>
+</div>
+
+<!-- ============ 4.7 LOBBY ============ -->
+<div class="board">
+    <div class="board-label">4.7 — Multi · Lobby</div>
+    <p class="board-desc">Adresse Wi-Fi (mDNS). Créer une salle (prénom + 2/3/4). Rejoindre via code.</p>
+    <div class="device"><div class="wrap wrap-500">
+        <h1>🎯 Petit Bac</h1>
+        <div class="card" style="background:#f0f8ff;border-color:#008CBA;">
+            <p style="margin:0 0 6px;">📡 Pour rejoindre depuis un autre appareil du même Wi-Fi :</p>
+            <p style="margin:0;font-size:20px;font-weight:bold;color:#008CBA;">petitbac.local:8080</p>
+            <p style="margin:6px 0 0;font-size:13px;color:gray;">À taper une seule fois, puis seul le code de salle suffit.</p>
+        </div>
+        <div class="card">
+            <h2>➕ Créer une salle</h2>
+            <div><input type="text" class="field-200" placeholder="Ton prénom..." value="Émilien"></div>
+            <div><select><option>2 joueurs</option><option selected>3 joueurs</option><option>4 joueurs</option></select></div>
+            <button class="btn-green">Créer 🚀</button>
+        </div>
+        <div class="card">
+            <h2>🔗 Rejoindre une salle</h2>
+            <div><input type="text" class="field-200" placeholder="Ton prénom..."></div>
+            <div><input type="text" class="field-200" placeholder="Code de la salle..."></div>
+            <button class="btn-blue">Rejoindre ✅</button>
+        </div>
+        <a style="color:#008CBA">← Retour accueil</a>
+    </div></div>
+</div>
+
+<!-- ============ 4.8 SALLE D'ATTENTE ============ -->
+<div class="board">
+    <div class="board-label">4.8 — Multi · Salle d'attente</div>
+    <p class="board-desc">Code de salle. Liste des joueurs en temps réel. Démarrage auto quand pleine.</p>
+    <div class="device"><div class="wrap wrap-500">
+        <h1>🎯 Salle d'attente</h1>
+        <p>Partage ce code à tes amis :</p>
+        <div class="code">PB-7421</div>
+        <p style="color:#008CBA;font-size:14px;">Sur un autre appareil du même Wi-Fi, ouvrir <strong>petitbac.local:8080</strong> puis entrer ce code.</p>
+        <h3>Joueurs connectés :</h3>
+        <ul class="joueurs-liste"><li>Émilien</li><li>Léa</li><li>Tom</li></ul>
+        <p class="attente">En attente des autres joueurs...</p>
+    </div></div>
+</div>
+
+<!-- ============ 4.9a JEU MULTI — INITIAL ============ -->
+<div class="board">
+    <div class="board-label">4.9a — Multi · Jeu <span class="board-tag">état initial</span></div>
+    <p class="board-desc">Lettre + points. BAC! actif. Valider / Quitter (annule pour tous).</p>
+    <div class="device"><div class="wrap wrap-550">
+        <h1>🎯 Petit Bac</h1>
+        <p>Bonne chance <strong>Émilien</strong> !</p>
+        <div class="lettre geante">B</div>
+        <p>⭐ Cette lettre vaut <strong>2</strong> pt(s)</p>
+        <div class="categorie-row"><label>Prénom</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Animal</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Fruit</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Légume</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Capitales &amp; Pays</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Métier</label><input placeholder="Commence par B..."></div>
+        <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+            <button class="btn-bac">🏆 BAC !</button>
+            <button class="btn-green">Valider ✅</button>
+        </div>
+        <div style="margin-top:15px;"><button class="btn-red" style="font-size:14px;padding:8px 20px;">🚪 Quitter la partie</button></div>
+    </div></div>
+</div>
+
+<!-- ============ 4.9b JEU MULTI — APRÈS BAC ============ -->
+<div class="board">
+    <div class="board-label">4.9b — Multi · Jeu <span class="board-tag">après BAC d'un adversaire</span></div>
+    <p class="board-desc">Notification « X a crié BAC » + minuteur 30s. Bouton BAC! désactivé.</p>
+    <div class="device"><div class="wrap wrap-550">
+        <h1>🎯 Petit Bac</h1>
+        <p>Bonne chance <strong>Émilien</strong> !</p>
+        <div class="lettre geante">B</div>
+        <p>⭐ Cette lettre vaut <strong>2</strong> pt(s)</p>
+        <div class="bac-notif">⚡ Léa a crié BAC ! Tu as 30 secondes !</div>
+        <div class="timer-box">⏱️ Temps restant : <span>18</span>s</div>
+        <div class="categorie-row"><label>Prénom</label><input value="Brice"></div>
+        <div class="categorie-row"><label>Animal</label><input value="Boa"></div>
+        <div class="categorie-row"><label>Fruit</label><input value="Banane"></div>
+        <div class="categorie-row"><label>Légume</label><input placeholder="Commence par B..."></div>
+        <div class="categorie-row"><label>Capitales &amp; Pays</label><input value="Brésil"></div>
+        <div class="categorie-row"><label>Métier</label><input placeholder="Commence par B..."></div>
+        <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+            <button class="btn-bac" disabled>🏆 BAC !</button>
+            <button class="btn-green">Valider ✅</button>
+        </div>
+    </div></div>
+</div>
+
+<!-- ============ 4.10 CONTESTATION ============ -->
+<div class="board large">
+    <div class="board-label">4.10 — Multi · Phase de contestation</div>
+    <p class="board-desc">Mots refusés par le jeu, par joueur. Refuser les mots des autres (case). Compteur de refus. « J'ai fini » (X/N). Minuteur.</p>
+    <div class="device"><div class="wrap wrap-1100">
+        <h1>⚖️ Phase de contestation</h1>
+        <p>Lettre : <span class="lettre" style="font-size:32px">B</span></p>
+        <div class="intro">
+            Voici les mots <strong>refusés par le jeu</strong>. Pour chaque mot des <em>autres joueurs</em>, vous pouvez cocher
+            <strong>« ❌ Refuser »</strong> si le mot ne doit pas être validé.<br>
+            À la fin, un mot est <strong>forcé en validé</strong> si <strong>aucun joueur</strong> ne l'a refusé.
+        </div>
+        <div class="barre-haut">
+            <div class="timer-box" style="margin:0">⏱️ Temps restant : <span>108</span>s</div>
+            <div class="compteur-fini">✅ <span>1</span>/<span>3</span> joueurs ont terminé</div>
+            <button class="btn-fini">J'ai fini ✓</button>
+        </div>
+        <div class="colonnes">
+            <div class="colonne moi">
+                <h3>Émilien (moi)</h3>
+                <div class="vide">Aucun mot refusé 🎉</div>
+            </div>
+            <div class="colonne">
+                <h3>Léa</h3>
+                <div class="mot-ligne">
+                    <div class="mot-cat">Métier</div>
+                    <div class="mot-valeur">Bof</div>
+                    <div class="mot-vote"><input type="checkbox"><label>❌ Refuser ce mot</label></div>
+                    <div class="vote-info danger">1 refus</div>
+                </div>
+            </div>
+            <div class="colonne">
+                <h3>Tom</h3>
+                <div class="mot-ligne">
+                    <div class="mot-cat">Fruit</div>
+                    <div class="mot-valeur">Brugnon</div>
+                    <div class="mot-vote"><input type="checkbox"><label>❌ Refuser ce mot</label></div>
+                    <div class="vote-info ok">0 refus</div>
+                </div>
+                <div class="mot-ligne">
+                    <div class="mot-cat">Métier</div>
+                    <div class="mot-valeur">Barman</div>
+                    <div class="mot-vote"><input type="checkbox" checked><label>❌ Refuser ce mot</label></div>
+                    <div class="vote-info danger">2 refus</div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<!-- ============ 4.11 CLASSEMENT ============ -->
+<div class="board">
+    <div class="board-label">4.11 — Multi · Classement</div>
+    <p class="board-desc">Podium (1er en or, moi surligné). Qui a crié BAC. Accès au détail.</p>
+    <div class="device"><div class="wrap wrap-650">
+        <h1>🏆 Résultats</h1>
+        <p>Lettre : <strong>B</strong> — <strong>2</strong> pt(s) par mot valide unique</p>
+        <p>BAC! crié par : <strong>Léa</strong></p>
+        <div class="podium">
+            <h2>🥇 Classement</h2>
+            <div class="podium-ligne premier moi"><span>1. Émilien</span><span>9 pts</span></div>
+            <div class="podium-ligne"><span>2. Léa</span><span>5 pts</span></div>
+            <div class="podium-ligne"><span>3. Tom</span><span>3 pts</span></div>
+        </div>
+        <div>
+            <a class="btn btn-green">🔄 Nouvelle partie</a>
+            <a class="btn btn-blue">🏠 Accueil</a>
+            <a class="btn btn-green">📊 Détail des scores</a>
+        </div>
+    </div></div>
+</div>
+
+<!-- ============ 4.12 DÉTAIL DES SCORES ============ -->
+<div class="board">
+    <div class="board-label">4.12 — Multi · Détail des scores</div>
+    <p class="board-desc">Tableau croisé catégories × joueurs. Unique=points lettre / partagé=1 / forcé=+1 / pénalité=−1.</p>
+    <div class="device"><div class="wrap wrap-700">
+        <h1>📊 Détail des scores</h1>
+        <p>Lettre : <strong>B</strong> — <strong>2</strong> pt(s) par mot unique valide</p>
+        <p>BAC! crié par : <strong>Léa</strong></p>
+        <table>
+            <tr><th>Catégorie</th><th class="moi">Émilien</th><th>Léa</th><th>Tom</th></tr>
+            <tr><td class="categorie">Prénom</td>
+                <td><span class="valide">Brice</span><br><span class="points">+2 pts</span></td>
+                <td><span class="valide">Bruno</span><br><span class="points">+2 pts</span></td>
+                <td><span class="valide">Bob</span><br><span class="points">+2 pts</span></td></tr>
+            <tr><td class="categorie">Animal</td>
+                <td><span class="valide">Boa</span><br><span class="points">+1 pt</span></td>
+                <td><span class="valide">Boa</span><br><span class="points">+1 pt</span></td>
+                <td><span class="valide">Bison</span><br><span class="points">+2 pts</span></td></tr>
+            <tr><td class="categorie">Fruit</td>
+                <td><span class="valide">Banane</span><br><span class="points">+1 pt</span></td>
+                <td><span class="valide">Banane</span><br><span class="points">+1 pt</span></td>
+                <td><span class="penalite">Brugnon</span><br><span class="points">+1 pt</span></td></tr>
+            <tr><td class="categorie">Légume</td>
+                <td><span class="valide">Brocoli</span><br><span class="points">+2 pts</span></td>
+                <td><span class="valide">Betterave</span><br><span class="points">+2 pts</span></td>
+                <td><span class="invalide">(vide)</span><br><span class="points">0 pt</span></td></tr>
+            <tr><td class="categorie">Capitales &amp; Pays</td>
+                <td><span class="valide">Brésil</span><br><span class="points">+2 pts</span></td>
+                <td><span class="valide">Belgique</span><br><span class="points">+2 pts</span></td>
+                <td><span class="valide">Berlin</span><br><span class="points">+2 pts</span></td></tr>
+            <tr><td class="categorie">Métier</td>
+                <td><span class="valide">Boulanger</span><br><span class="points">+2 pts</span></td>
+                <td><span class="invalide">Bof</span><br><span class="points">0 pt</span></td>
+                <td><span class="penalite">Barman</span><br><span class="points">−1 pt</span></td></tr>
+        </table>
+        <p style="font-size:13px;color:#555;"><span class="valide">vert</span> = validé · <span class="penalite">orange</span> = forcé validé / pénalité BAC · <span class="invalide">rouge</span> = refusé.</p>
+        <div>
+            <a class="btn btn-blue">← Retour au classement</a>
+            <a class="btn btn-green">🔄 Nouvelle partie</a>
+        </div>
+    </div></div>
+</div>
+
+</body>
+</html>

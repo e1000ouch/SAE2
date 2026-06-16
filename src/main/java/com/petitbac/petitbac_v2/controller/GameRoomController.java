@@ -1,5 +1,6 @@
 package com.petitbac.petitbac_v2.controller;
 
+import com.petitbac.petitbac_v2.config.MdnsService;
 import com.petitbac.petitbac_v2.model.GameRoom;
 import com.petitbac.petitbac_v2.service.GameRoomService;
 import com.petitbac.petitbac_v2.service.ScoreService;
@@ -28,9 +29,13 @@ public class GameRoomController {
     @Autowired
     private ValidationService validationService;
 
+    @Autowired
+    private MdnsService mdnsService;
+
     // --- PAGE LOBBY ---
     @GetMapping("/lobby")
-    public String lobby() {
+    public String lobby(Model model) {
+        model.addAttribute("serveurUrl", mdnsService.getUrl());
         return "lobby";
     }
 
@@ -144,6 +149,7 @@ public class GameRoomController {
         model.addAttribute("prenom",     prenom);
         model.addAttribute("joueurs",    room.getJoueurs());
         model.addAttribute("maxJoueurs", room.getMaxJoueurs());
+        model.addAttribute("serveurUrl", mdnsService.getUrl());
 
         return "waiting";
     }
