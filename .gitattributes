@@ -1,2 +1,6 @@
-/mvnw text eol=lf
-*.cmd text eol=crlf
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.db binary
+*.docx binary
+*.sqbpro binary
