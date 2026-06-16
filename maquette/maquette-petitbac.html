@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maquette fonctionnelle — Petit Bac</title>
+<style>
+    /* ============ MISE EN PAGE DE LA MAQUETTE (hors interface du jeu) ============ */
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+        font-family: Arial, sans-serif;
+        background: #2b2f36;
+        color: #222;
+        display: flex;
+        min-height: 100vh;
+    }
+
+    /* --- Barre latérale : navigateur d'écrans (outil de maquette, pas le jeu) --- */
+    #sidebar {
+        width: 260px;
+        flex-shrink: 0;
+        background: #1f2329;
+        color: #ddd;
+        padding: 16px 14px 40px;
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+        height: 100vh;
+        overflow-y: auto;
+    }
+    #sidebar h2 { font-size: 15px; margin: 0 0 4px; color: #fff; }
+    #sidebar .soustitre { font-size: 11px; color: #8a93a0; margin: 0 0 16px; line-height: 1.4; }
+    #sidebar .groupe { font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+        color: #6cd07f; margin: 18px 0 6px; }
+    #sidebar a.nav {
+        display: block; padding: 7px 10px; margin: 3px 0; border-radius: 6px;
+        color: #cfd6df; text-decoration: none; font-size: 13px; cursor: pointer;
+        border: 1px solid transparent;
+    }
+    #sidebar a.nav:hover { background: #2b313a; }
+    #sidebar a.nav.actif { background: #2f6f3e; color: #fff; border-color: #4CAF50; }
+    #sidebar .toggle-box { background: #2b313a; border-radius: 8px; padding: 10px; margin-top: 14px; font-size: 12px; }
+    #sidebar .toggle-box label { display: block; margin: 4px 0; cursor: pointer; }
+    #sidebar .legende { font-size: 11px; color: #8a93a0; margin-top: 18px; line-height: 1.5; }
+
+    /* --- Zone principale --- */
+    #main { flex: 1; padding: 0; display: flex; flex-direction: column; }
+
+    /* Bandeau de description fonctionnelle (outil de maquette) */
+    #caption {
+        background: #11151a; color: #e6edf3; padding: 12px 22px;
+        font-size: 13px; line-height: 1.5; border-bottom: 3px solid #4CAF50;
+    }
+    #caption .titre-ecran { color: #6cd07f; font-weight: bold; font-size: 14px; }
+    #caption .tag { display: inline-block; background: #2f6f3e; color: #fff; font-size: 10px;
+        padding: 1px 7px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+
+    /* Cadre "appareil" qui contient l'écran réel du jeu */
+    #device-wrap { flex: 1; background: #3a3f47; padding: 26px; overflow-y: auto; }
+    #device {
+        background: #fff; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.4);
+        min-height: 600px; padding: 10px 0 40px; max-width: 1160px; margin: 0 auto;
+    }
+
+    /* Une seule section visible à la fois */
+    .screen { display: none; }
+    .screen.actif { display: block; }
+    /* Centrage fidèle aux écrans d'origine */
+    .screen .wrap { margin: 30px auto; text-align: center; padding: 0 15px; }
+    .wrap-500 { max-width: 500px; }
+    .wrap-550 { max-width: 550px; }
+    .wrap-650 { max-width: 650px; }
+    .wrap-700 { max-width: 700px; }
+    .wrap-400 { max-width: 400px; }
+    .wrap-1100 { max-width: 1100px; }
+
+    /* ============ STYLES REPRIS DES ÉCRANS D'ORIGINE ============ */
+    h1 { font-size: 28px; }
+    .lettre { font-weight: bold; color: #4CAF50; line-height: 1; }
+    .lettre.geante { font-size: 100px; }
+    .points-lettre { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;
+        padding: 8px; margin: 10px auto 20px; font-size: 14px; max-width: 400px; }
+
+    input, select { padding: 8px; margin: 8px; font-size: 16px; border: 2px solid #ddd; border-radius: 6px; }
+    .field-200 { width: 200px; }
+    .field-250 { width: 250px; }
+
+    button, a.btn {
+        padding: 10px 20px; color: white; border: none; font-size: 16px;
+        cursor: pointer; border-radius: 8px; text-decoration: none; display: inline-block; margin: 5px;
+    }
+    .btn-green   { background:#4CAF50; } .btn-green:hover{background:#45a049;}
+    .btn-blue    { background:#008CBA; }
+    .btn-red     { background:#f44336; }
+    .btn-orange  { background:#ff9800; }
+    .btn-bac     { background:#ff5722; }
+    .btn-disabled{ background:#aaa; cursor:not-allowed; pointer-events:none; }
+    button:disabled { background:#aaa; cursor:not-allowed; }
+
+    .card { border: 2px solid #ddd; border-radius: 12px; padding: 22px; margin: 18px auto; max-width: 460px; }
+    .nav-jeu { display: flex; justify-content: flex-end; gap: 10px; margin: 0 20px 10px; }
+    .lock-msg { color:#888; font-size:13px; margin-top:8px; }
+    .erreur { color:red; }
+
+    .categorie-row { display:flex; align-items:center; margin:10px 0; gap:10px; }
+    .categorie-row label { width:160px; text-align:right; font-weight:bold; font-size:15px; }
+    .categorie-row input { flex:1; }
+
+    table { width:100%; border-collapse:collapse; margin:18px 0; }
+    th { background:#4CAF50; color:#fff; padding:10px; }
+    th.moi { background:#ff9800; }
+    td { padding:10px; border-bottom:1px solid #ddd; }
+    td.categorie { font-weight:bold; text-align:left; background:#f5f5f5; }
+    .valide{color:green;font-weight:bold;} .invalide{color:red;} .penalite{color:orange;}
+    .points{font-size:12px;color:gray;}
+    td.tache { background:#e8f5e9; color:#2e7d32; font-weight:bold; text-align:left; }
+    td.ok { color:#388e3c; font-weight:bold; white-space:nowrap; }
+    td.warn { color:#e65100; font-weight:bold; white-space:nowrap; }
+    #couverture code { background:#f5f5f5; padding:1px 5px; border-radius:4px; font-size:12px; }
+    #couverture td { font-size:13px; }
+
+    .score-box { background:#f0f8ff; border:2px solid #4CAF50; border-radius:10px; padding:20px;
+        margin:20px auto; font-size:20px; max-width:420px; }
+
+    .code { font-size:48px; font-weight:bold; color:#4CAF50; letter-spacing:8px; margin:18px 0; }
+    .joueurs-liste { list-style:none; padding:0; max-width:300px; margin:0 auto; }
+    .joueurs-liste li { padding:8px; margin:5px 0; background:#f0f8ff; border-radius:6px; font-size:18px; }
+    .attente { color:gray; font-style:italic; }
+
+    .bac-notif { background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:10px; margin:10px auto; max-width:420px; }
+    .timer-box { background:#ffe0e0; border:2px solid red; border-radius:8px; padding:10px;
+        margin:10px auto; font-size:20px; font-weight:bold; color:red; max-width:300px; }
+
+    .podium { background:#f0f8ff; border:2px solid #4CAF50; border-radius:10px; padding:20px; margin:20px auto; max-width:480px; }
+    .podium-ligne { display:flex; justify-content:space-between; align-items:center;
+        padding:8px 20px; margin:5px 0; border-radius:6px; font-size:18px; }
+    .premier { background:#ffd700; font-weight:bold; }
+    .moi { background:#fff3cd; font-weight:bold; }
+
+    /* Contestation */
+    .intro { background:#f0f8ff; border:1px solid #b3d4fc; padding:12px 18px; border-radius:8px;
+        margin:15px auto 25px; max-width:800px; font-size:14px; line-height:1.5; text-align:left; }
+    .intro strong { color:#d32f2f; }
+    .barre-haut { position:sticky; top:0; background:#fff; padding:12px 0; border-bottom:2px solid #ddd;
+        z-index:5; display:flex; justify-content:space-around; align-items:center; flex-wrap:wrap; gap:10px; }
+    .compteur-fini { background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:8px 16px; font-size:14px; }
+    .btn-fini { padding:10px 22px; background:#4CAF50; color:#fff; border:none; font-size:16px; cursor:pointer; border-radius:8px; }
+    .btn-fini.actif { background:#888; }
+    .colonnes { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:15px; margin-top:25px; }
+    .colonne { background:#fafafa; border:1px solid #ddd; border-radius:8px; padding:12px; }
+    .colonne.moi { background:#fff3cd; border-color:#ffc107; }
+    .colonne h3 { margin:0 0 10px; font-size:16px; text-align:center; border-bottom:1px solid #ddd; padding-bottom:6px; }
+    .mot-ligne { background:#fff; border:1px solid #eee; border-radius:6px; padding:8px; margin:6px 0; text-align:left; }
+    .mot-cat { font-size:11px; color:#777; text-transform:uppercase; }
+    .mot-valeur { font-size:16px; font-weight:bold; color:#333; margin:2px 0 6px; }
+    .mot-vote { display:flex; align-items:center; gap:8px; font-size:13px; }
+    .mot-vote input[type=checkbox]{ width:18px; height:18px; cursor:pointer; }
+    .mot-vote.refuse-on { color:#d32f2f; font-weight:bold; }
+    .vote-info { font-size:12px; color:#555; margin-top:4px; }
+    .vote-info.danger{color:#d32f2f;font-weight:bold;} .vote-info.ok{color:#388e3c;}
+    .ma-ligne { font-size:12px; font-style:italic; color:#555; padding:4px 0 0; }
+    .vide { color:#888; font-style:italic; font-size:13px; text-align:center; margin-top:10px; }
+
+    /* Pastille "action simulée" pour les comportements temps réel/serveur */
+    .sim { background:#eef; border:1px dashed #88a; border-radius:8px; padding:10px;
+        margin:14px auto; max-width:480px; font-size:13px; color:#334; }
+    .sim button { font-size:13px; padding:6px 12px; }
+</style>
+</head>
+<body>
+
+<!-- ===================== NAVIGATEUR D'ÉCRANS (outil de maquette) ===================== -->
+<div id="sidebar">
+    <h2>🗺️ Maquette — Petit Bac</h2>
+    <p class="soustitre">Reproduction fonctionnelle de l'interface réelle.</p>
+
+    <div class="groupe">Synthèse</div>
+    <a class="nav" data-s="couverture" onclick="go('couverture')">📋 Couverture (F1→F22)</a>
+
+    <div class="groupe">Commun</div>
+    <a class="nav" data-s="accueil"   onclick="go('accueil')">🎯 Accueil</a>
+    <a class="nav" data-s="login"     onclick="go('login')">🔑 Connexion</a>
+    <a class="nav" data-s="register"  onclick="go('register')">📝 Inscription</a>
+
+    <div class="groupe">Mode Solo</div>
+    <a class="nav" data-s="solo-home"    onclick="go('solo-home')">👤 Saisie prénom</a>
+    <a class="nav" data-s="solo-game"    onclick="goSolo()">▶️ Jeu solo</a>
+    <a class="nav" data-s="solo-results" onclick="go('solo-results')">📋 Résultats solo</a>
+
+    <div class="groupe">Mode Multijoueur</div>
+    <a class="nav" data-s="lobby"          onclick="go('lobby')">🚪 Lobby</a>
+    <a class="nav" data-s="waiting"        onclick="goWaiting()">⏳ Salle d'attente</a>
+    <a class="nav" data-s="multi-game"     onclick="goMultiGame()">🎮 Jeu multi</a>
+    <a class="nav" data-s="multi-challenge"onclick="goChallenge()">⚖️ Contestation</a>
+    <a class="nav" data-s="multi-results"  onclick="go('multi-results')">🏆 Classement</a>
+    <a class="nav" data-s="multi-scores"   onclick="go('multi-scores')">📊 Détail scores</a>
+
+    <div class="toggle-box">
+        <strong>État de session (écran Accueil)</strong>
+        <label><input type="radio" name="sess" onclick="setConnecte(false)" checked> Visiteur anonyme</label>
+        <label><input type="radio" name="sess" onclick="setConnecte(true)"> Connecté (« emilien »)</label>
+    </div>
+
+    <div class="toggle-box">
+        <label><input type="checkbox" id="chk-caption" onclick="toggleCaption()" checked> Afficher les bandeaux de fonctionnalités</label>
+    </div>
+
+    <p class="legende">Les blocs <span style="color:#88a;">— action simulée —</span> reproduisent ce que le serveur / WebSocket fait en vrai (temps réel, autres joueurs).</p>
+</div>
+
+<!-- ===================== ZONE PRINCIPALE ===================== -->
+<div id="main">
+    <div id="caption"></div>
+
+    <div id="device-wrap">
+    <div id="device">
+
+    <!-- ============================ ACCUEIL ============================ -->
+    <section id="accueil" class="screen">
+        <div class="nav-jeu" id="accueil-nav"></div>
+        <div class="wrap wrap-500">
+            <h1>🎯 Petit Bac</h1>
+            <p>Choisis ton mode de jeu !</p>
+
+            <div class="card">
+                <h2>👤 Solo</h2>
+                <p>Joue seul contre le dictionnaire</p>
+                <a class="btn btn-green" onclick="go('solo-home')">Jouer en solo 🚀</a>
+            </div>
+
+            <div class="card" id="card-multi"></div>
+        </div>
+    </section>
+
+    <!-- ============================ CONNEXION ============================ -->
+    <section id="login" class="screen">
+        <div class="wrap wrap-400">
+            <h1>🔑 Connexion</h1>
+            <p class="erreur" style="display:none" id="login-err">Identifiants incorrects !</p>
+            <div><input type="text" class="field-250" placeholder="Nom d'utilisateur"></div>
+            <div><input type="password" class="field-250" placeholder="Mot de passe"></div>
+            <button class="btn-blue" onclick="setConnecte(true); go('accueil')">Se connecter</button>
+            <p>Pas encore de compte ? <a style="color:#008CBA;cursor:pointer" onclick="go('register')">S'inscrire</a></p>
+            <p><a style="color:#008CBA;cursor:pointer" onclick="go('accueil')">← Retour accueil</a></p>
+        </div>
+    </section>
+
+    <!-- ============================ INSCRIPTION ============================ -->
+    <section id="register" class="screen">
+        <div class="wrap wrap-400">
+            <h1>📝 Inscription</h1>
+            <div><input type="text" class="field-250" placeholder="Nom d'utilisateur"></div>
+            <div><input type="password" class="field-250" placeholder="Mot de passe"></div>
+            <button class="btn-green" onclick="go('login')">Créer mon compte</button>
+            <p>Déjà un compte ? <a style="color:#008CBA;cursor:pointer" onclick="go('login')">Se connecter</a></p>
+            <p><a style="color:#008CBA;cursor:pointer" onclick="go('accueil')">← Retour accueil</a></p>
+        </div>
+    </section>
+
+    <!-- ============================ SOLO — SAISIE PRÉNOM ============================ -->
+    <section id="solo-home" class="screen">
+        <div class="wrap wrap-500">
+            <h1>🎯 Petit Bac</h1>
+            <p>Entre ton prénom pour commencer !</p>
+            <div><input type="text" id="solo-prenom" class="field-250" placeholder="Ton prénom..." value="Émilien"></div>
+            <button class="btn-green" onclick="goSolo()">Jouer 🚀</button>
+        </div>
+    </section>
+
+    <!-- ============================ SOLO — JEU ============================ -->
+    <section id="solo-game" class="screen">
+        <div class="wrap wrap-550">
+            <h1>🎯 Petit Bac</h1>
+            <p>Bonne chance <strong id="sg-prenom">Émilien</strong> !</p>
+            <div class="lettre geante" id="sg-lettre">B</div>
+            <div class="points-lettre">⭐ Cette lettre vaut <strong id="sg-points">2</strong> point(s) par mot valide !</div>
+            <div id="sg-form"></div>
+            <button class="btn-green" onclick="soloSubmit()">Valider 🎯</button>
+            <div style="margin-top:15px;">
+                <a class="btn btn-red" style="font-size:14px;padding:8px 20px;" onclick="go('accueil')">🚪 Quitter la partie</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================ SOLO — RÉSULTATS ============================ -->
+    <section id="solo-results" class="screen">
+        <div class="wrap wrap-550">
+            <h1>🎯 Résultats</h1>
+            <p>Lettre : <strong id="sr-lettre">B</strong> — <strong id="sr-points">2</strong> pt(s) par mot valide</p>
+            <table id="sr-table"></table>
+            <div class="score-box" id="sr-score"></div>
+            <div>
+                <a class="btn btn-green" onclick="goSolo(true)">🔄 Rejouer</a>
+                <a class="btn btn-blue" onclick="go('accueil')">🏠 Accueil</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================ LOBBY ============================ -->
+    <section id="lobby" class="screen">
+        <div class="wrap wrap-500">
+            <h1>🎯 Petit Bac</h1>
+            <div class="card" style="background:#f0f8ff;border-color:#008CBA;">
+                <p style="margin:0 0 6px;">📡 Pour rejoindre depuis un autre appareil du même Wi-Fi :</p>
+                <p style="margin:0;font-size:20px;font-weight:bold;color:#008CBA;">petitbac.local:8080</p>
+                <p style="margin:6px 0 0;font-size:13px;color:gray;">À taper une seule fois dans le navigateur, puis seul le code de salle suffit.</p>
+            </div>
+
+            <div class="card">
+                <h2>➕ Créer une salle</h2>
+                <div><input type="text" id="lobby-prenom" class="field-200" placeholder="Ton prénom..." value="Émilien"></div>
+                <div>
+                    <select id="lobby-max">
+                        <option value="2">2 joueurs</option>
+                        <option value="3" selected>3 joueurs</option>
+                        <option value="4">4 joueurs</option>
+                    </select>
+                </div>
+                <button class="btn-green" onclick="goWaiting()">Créer 🚀</button>
+            </div>
+
+            <div class="card">
+                <h2>🔗 Rejoindre une salle</h2>
+                <div><input type="text" class="field-200" placeholder="Ton prénom..."></div>
+                <div><input type="text" class="field-200" placeholder="Code de la salle..."></div>
+                <button class="btn-blue" onclick="goWaiting()">Rejoindre ✅</button>
+            </div>
+            <a style="color:#008CBA;cursor:pointer" onclick="go('accueil')">← Retour accueil</a>
+        </div>
+    </section>
+
+    <!-- ============================ SALLE D'ATTENTE ============================ -->
+    <section id="waiting" class="screen">
+        <div class="wrap wrap-500">
+            <h1>🎯 Salle d'attente</h1>
+            <p>Partage ce code à tes amis :</p>
+            <div class="code" id="w-code">PB-7421</div>
+            <p style="color:#008CBA;font-size:14px;">Sur un autre appareil du même Wi-Fi, ouvrir <strong>petitbac.local:8080</strong> puis entrer ce code.</p>
+            <h3>Joueurs connectés :</h3>
+            <ul class="joueurs-liste" id="w-liste"></ul>
+            <p class="attente" id="w-msg">En attente des autres joueurs...</p>
+
+            <div class="sim">— action simulée (serveur temps réel) —<br>
+                <button class="btn-blue" onclick="ajouterJoueur()">➕ Un joueur rejoint</button>
+                <button class="btn-green" onclick="goMultiGame()">▶️ Salle pleine → démarrer</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================ JEU MULTI ============================ -->
+    <section id="multi-game" class="screen">
+        <div class="wrap wrap-550">
+            <h1>🎯 Petit Bac</h1>
+            <p>Bonne chance <strong>Émilien</strong> !</p>
+            <div class="lettre geante">B</div>
+            <p>⭐ Cette lettre vaut <strong>2</strong> pt(s)</p>
+
+            <div class="bac-notif" id="mg-notif" style="display:none"></div>
+            <div class="timer-box" id="mg-timer" style="display:none">⏱️ Temps restant : <span id="mg-count">30</span>s</div>
+
+            <div id="mg-form"></div>
+            <div style="margin-top:20px;display:flex;gap:10px;justify-content:center;">
+                <button class="btn-bac" id="mg-bac" onclick="crierBac()">🏆 BAC !</button>
+                <button class="btn-green" onclick="goChallenge()">Valider ✅</button>
+            </div>
+            <div style="margin-top:15px;">
+                <button class="btn-red" style="font-size:14px;padding:8px 20px;" onclick="quitterMulti()">🚪 Quitter la partie</button>
+            </div>
+
+            <div class="sim">— action simulée (un adversaire) —<br>
+                <button class="btn-orange" onclick="adversaireBac()">⚡ Léa crie BAC ! (déclenche le minuteur 30s)</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================ CONTESTATION ============================ -->
+    <section id="multi-challenge" class="screen">
+        <div class="wrap wrap-1100">
+            <h1>⚖️ Phase de contestation</h1>
+            <p>Lettre : <span class="lettre" style="font-size:32px">B</span></p>
+            <div class="intro">
+                Voici les mots <strong>refusés par le jeu</strong>. Pour chaque mot des <em>autres joueurs</em>, vous pouvez cocher
+                <strong>« ❌ Refuser »</strong> si vous estimez que le mot ne doit pas être validé.<br>
+                À la fin de la phase, un mot sera <strong>forcé en validé</strong> (et les points ajoutés) si <strong>aucun joueur</strong> ne l'a refusé.<br>
+                Vous pouvez modifier vos votes tant que la phase n'est pas terminée.
+            </div>
+
+            <div class="barre-haut">
+                <div class="timer-box" style="margin:0">⏱️ Temps restant : <span id="ch-timer">120</span>s</div>
+                <div class="compteur-fini">✅ <span id="ch-fini">0</span>/<span id="ch-total">3</span> joueurs ont terminé</div>
+                <button id="ch-btn" class="btn-fini" onclick="toggleFini()">J'ai fini ✓</button>
+            </div>
+
+            <div class="colonnes" id="ch-colonnes"></div>
+
+            <div class="sim">— action simulée (fin de la phase) —<br>
+                <button class="btn-green" onclick="go('multi-results')">⏭️ Conclure la phase → Résultats</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================ CLASSEMENT ============================ -->
+    <section id="multi-results" class="screen">
+        <div class="wrap wrap-650">
+            <h1>🏆 Résultats</h1>
+            <p>Lettre : <strong>B</strong> — <strong>2</strong> pt(s) par mot valide unique</p>
+            <p>BAC! crié par : <strong>Léa</strong></p>
+            <div class="podium">
+                <h2>🥇 Classement</h2>
+                <div class="podium-ligne premier"><span>1. Émilien</span><span>9 pts</span></div>
+                <div class="podium-ligne"><span>2. Léa</span><span>5 pts</span></div>
+                <div class="podium-ligne"><span>3. Tom</span><span>3 pts</span></div>
+            </div>
+            <div>
+                <a class="btn btn-green" onclick="go('lobby')">🔄 Nouvelle partie</a>
+                <a class="btn btn-blue" onclick="go('accueil')">🏠 Accueil</a>
+                <a class="btn btn-green" onclick="go('multi-scores')">📊 Détail des scores</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================ DÉTAIL DES SCORES ============================ -->
+    <section id="multi-scores" class="screen">
+        <div class="wrap wrap-700">
+            <h1>📊 Détail des scores</h1>
+            <p>Lettre : <strong>B</strong> — <strong>2</strong> pt(s) par mot unique valide</p>
+            <p>BAC! crié par : <strong>Léa</strong></p>
+            <table>
+                <tr>
+                    <th>Catégorie</th><th class="moi">Émilien</th><th>Léa</th><th>Tom</th>
+                </tr>
+                <tr><td class="categorie">Prénom</td>
+                    <td><span class="valide">Brice</span><br><span class="points">+2 pts</span></td>
+                    <td><span class="valide">Bruno</span><br><span class="points">+2 pts</span></td>
+                    <td><span class="valide">Bob</span><br><span class="points">+2 pts</span></td></tr>
+                <tr><td class="categorie">Animal</td>
+                    <td><span class="valide">Boa</span><br><span class="points">+1 pt</span></td>
+                    <td><span class="valide">Boa</span><br><span class="points">+1 pt</span></td>
+                    <td><span class="valide">Bison</span><br><span class="points">+2 pts</span></td></tr>
+                <tr><td class="categorie">Fruit</td>
+                    <td><span class="valide">Banane</span><br><span class="points">+1 pt</span></td>
+                    <td><span class="valide">Banane</span><br><span class="points">+1 pt</span></td>
+                    <td><span class="penalite">Brugnon</span><br><span class="points">+1 pt</span></td></tr>
+                <tr><td class="categorie">Légume</td>
+                    <td><span class="valide">Brocoli</span><br><span class="points">+2 pts</span></td>
+                    <td><span class="valide">Betterave</span><br><span class="points">+2 pts</span></td>
+                    <td><span class="invalide">(vide)</span><br><span class="points">0 pt</span></td></tr>
+                <tr><td class="categorie">Capitales & Pays</td>
+                    <td><span class="valide">Brésil</span><br><span class="points">+2 pts</span></td>
+                    <td><span class="valide">Belgique</span><br><span class="points">+2 pts</span></td>
+                    <td><span class="valide">Berlin</span><br><span class="points">+2 pts</span></td></tr>
+                <tr><td class="categorie">Métier</td>
+                    <td><span class="valide">Boulanger</span><br><span class="points">+2 pts</span></td>
+                    <td><span class="invalide">Bof</span><br><span class="points">0 pt</span></td>
+                    <td><span class="penalite">Barman</span><br><span class="points">−1 pt</span></td></tr>
+            </table>
+            <p style="font-size:13px;color:#555;">
+                <span class="valide">vert</span> = validé · <span class="penalite">orange</span> = forcé validé (contestation) / pénalité BAC · <span class="invalide">rouge</span> = refusé.
+                « Brugnon » a été forcé validé (aucun refus). « Barman » (mot du crieur de BAC) reste refusé → −1.
+            </p>
+            <div>
+                <a class="btn btn-blue" onclick="go('multi-results')">← Retour au classement</a>
+                <a class="btn btn-green" onclick="go('lobby')">🔄 Nouvelle partie</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================ COUVERTURE FONCTIONNELLE ============================ -->
+    <section id="couverture" class="screen">
+        <div class="wrap" style="max-width:940px;text-align:left;">
+            <h1 style="text-align:center;">📋 Couverture fonctionnelle</h1>
+            <p style="text-align:center;color:#555;">
+                22 fonctionnalités regroupées par tâche → écran de la maquette → élément qui la réalise.
+            </p>
+            <table>
+                <tr><th>#</th><th>Fonctionnalité</th><th>Écran</th><th>Réalisé par</th><th>Statut</th></tr>
+
+                <tr><td colspan="5" class="tache">🗝️ Tâche — S'authentifier</td></tr>
+                <tr><td>F1</td><td>Créer un compte</td><td>Inscription</td><td><code>POST /register</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F2</td><td>Se connecter / se déconnecter</td><td>Connexion</td><td><code>POST /login</code> · <code>/logout</code></td><td class="ok">✓ couverte</td></tr>
+
+                <tr><td colspan="5" class="tache">🎯 Tâche — Choisir un mode de jeu</td></tr>
+                <tr><td>F3</td><td>Accès multi conditionné à la connexion</td><td>Accueil</td><td><code>GET /</code> + Spring Security</td><td class="ok">✓ couverte</td></tr>
+
+                <tr><td colspan="5" class="tache">👤 Tâche — Jouer en solo</td></tr>
+                <tr><td>F4</td><td>Lancer une partie (saisie prénom)</td><td>Saisie prénom</td><td><code>GET /solo</code> · <code>POST /start</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F5</td><td>Tirage lettre + barème de points</td><td>Jeu solo</td><td><code>getPointsForLetter</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F6</td><td>Saisir un mot par catégorie (6)</td><td>Jeu solo</td><td>formulaire</td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F7</td><td>Vérifier les mots (valide / mauvaise lettre / inconnu)</td><td>Résultats solo</td><td><code>POST /submit</code> · <code>isValid</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F8</td><td>Calcul du score solo</td><td>Résultats solo</td><td><code>calculateSoloScore</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F9</td><td>Rejouer</td><td>Résultats solo</td><td><code>GET /start-again</code></td><td class="ok">✓ couverte</td></tr>
+
+                <tr><td colspan="5" class="tache">👥 Tâche — Créer / rejoindre une partie multi</td></tr>
+                <tr><td>F10</td><td>Créer une salle (taille 2–4)</td><td>Lobby</td><td><code>POST /create-room</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F11</td><td>Rejoindre une salle par code</td><td>Lobby</td><td><code>POST /join-room</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F12</td><td>Découverte réseau Wi-Fi (mDNS)</td><td>Lobby / Attente</td><td><code>MdnsService</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F13</td><td>Salle d'attente temps réel (liste joueurs)</td><td>Salle d'attente</td><td><code>GET /room-status</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F14</td><td>Démarrage automatique</td><td>Salle d'attente</td><td>statut <code>PLAYING</code></td><td class="ok">✓ couverte</td></tr>
+
+                <tr><td colspan="5" class="tache">🎮 Tâche — Jouer la manche multi</td></tr>
+                <tr><td>F15</td><td>Crier BAC! + minuteur 30s</td><td>Jeu multi</td><td>WebSocket <code>/ws</code> · <code>/multi-submit</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F16</td><td>Quitter / annulation pour tous</td><td>Jeu multi</td><td><code>POST /quit-game</code></td><td class="ok">✓ couverte</td></tr>
+
+                <tr><td colspan="5" class="tache">⚖️ Tâche — Contester les mots</td></tr>
+                <tr><td>F17</td><td>Refuser les mots des adversaires (vote)</td><td>Contestation</td><td><code>/multi-challenge/vote</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F18</td><td>Indiquer « J'ai fini » (X/N)</td><td>Contestation</td><td><code>/multi-challenge/done</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F19</td><td>Mot forcé validé si aucun refus</td><td>Contestation</td><td><code>forcedValid</code></td><td class="ok">✓ couverte</td></tr>
+
+                <tr><td colspan="5" class="tache">🏆 Tâche — Consulter les résultats</td></tr>
+                <tr><td>F20</td><td>Score multi (unique / partagé / forcé / pénalité)</td><td>Détail scores</td><td><code>calculateMultiScores</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F21</td><td>Classement final</td><td>Classement</td><td><code>multi-results</code></td><td class="ok">✓ couverte</td></tr>
+                <tr><td>F22</td><td>Détail des scores croisé</td><td>Détail scores</td><td><code>multi-scores</code></td><td class="ok">✓ couverte</td></tr>
+            </table>
+        </div>
+    </section>
+
+    </div><!-- /device -->
+    </div><!-- /device-wrap -->
+</div><!-- /main -->
+
+<script>
+/* ====================================================================
+   DONNÉES & RÈGLES (reprises de ScoreService / HomeController)
+   ==================================================================== */
+const CATS = [
+    ["prenom","Prénom"], ["animal","Animal"], ["fruit","Fruit"],
+    ["legume","Légume"], ["capital_pays","Capitales & Pays"], ["metier","Métier"]
+];
+
+// Mini-dictionnaire de démonstration (le vrai jeu interroge la BDD WordRepository)
+const DICO = {
+    prenom:       ["alice","bob","brice","bruno","camille","david","emilien","léa","tom","sophie","marc","paul"],
+    animal:       ["boa","bison","chat","cheval","dauphin","éléphant","aigle","mouton","panda","tigre","baleine"],
+    fruit:        ["banane","abricot","cerise","datte","fraise","ananas","mangue","poire","pomme","kiwi"],
+    legume:       ["brocoli","betterave","carotte","courgette","endive","artichaut","poireau","tomate","navet"],
+    capital_pays: ["brésil","belgique","berlin","canada","danemark","espagne","france","allemagne","italie","paris"],
+    metier:       ["boulanger","barman","coiffeur","dentiste","électricien","avocat","médecin","pilote","plombier"]
+};
+
+function pointsLettre(l) {
+    l = (l||"").toUpperCase();
+    if ("KWXYZ".includes(l)) return 3;
+    if ("BFGHJQV".includes(l)) return 2;
+    return 1;
+}
+function lettreAleatoire() {
+    return "ABCDEFGHIJKLMNOPRSTUV"[Math.floor(Math.random()*21)]; // évite les lettres sans mots dans le mini-dico
+}
+function estValide(cat, mot, lettre) {
+    mot = (mot||"").trim().toLowerCase();
+    if (!mot) return {valide:false, bonneLettre:false};
+    const bonneLettre = mot[0].toUpperCase() === lettre.toUpperCase();
+    const dansDico = (DICO[cat]||[]).includes(mot);
+    return {valide: bonneLettre && dansDico, bonneLettre};
+}
+
+/* ====================================================================
+   BANDEAUX DE FONCTIONNALITÉS
+   ==================================================================== */
+const CAPTIONS = {
+    "couverture":      ["Couverture fonctionnelle", "Synthèse", "Les 22 fonctionnalités (F1→F22) regroupées par tâche, reliées à leur écran et à l'élément qui les réalise."],
+    "accueil":         ["Accueil", "Page d'accueil", "Navigation contextuelle (anonyme → Connexion/Inscription ; connecté → Profil/Déconnexion). Accès Solo (libre) et Multi (connexion requise, sinon bouton grisé)."],
+    "login":           ["Connexion", "Authentification", "Saisie identifiant + mot de passe. Message d'erreur si identifiants incorrects, message de déconnexion. Lien vers l'inscription."],
+    "register":        ["Inscription", "Création de compte", "Saisie identifiant + mot de passe → compte créé, redirection vers la connexion."],
+    "solo-home":       ["Saisie prénom", "Solo", "Saisie du prénom du joueur avant de lancer une partie solo."],
+    "solo-game":       ["Jeu solo", "Solo", "Tirage aléatoire de la lettre + points associés. Saisie d'un mot par catégorie (6). Validation des réponses. Abandon possible."],
+    "solo-results":    ["Résultats solo", "Solo", "Vérification mot par mot : ✅ valide / ❌ mauvaise lettre / ❌ mot inconnu. Score total /max + nb de mots valides. Rejouer ou retour accueil."],
+    "lobby":           ["Lobby", "Multijoueur", "Adresse serveur Wi-Fi (mDNS) à partager. Créer une salle (prénom + nombre de joueurs 2/3/4). Rejoindre une salle via un code."],
+    "waiting":         ["Salle d'attente", "Multijoueur", "Code de salle partageable. Liste des joueurs connectés mise à jour en temps réel. Démarrage automatique quand la salle est pleine. Annulation si un joueur quitte."],
+    "multi-game":      ["Jeu multi", "Multijoueur", "Tirage lettre + points. Saisie par catégorie. Crier BAC! (déclenche un minuteur 30s pour les autres). Notification quand un autre crie BAC. Validation. Quitter (annule pour tous). Synchro WebSocket temps réel."],
+    "multi-challenge": ["Phase de contestation", "Multijoueur", "Mots refusés par le jeu, affichés par joueur. Refuser les mots des adversaires (case à cocher) ; compteur de refus en direct. Bouton « J'ai fini » (X/N joueurs). Minuteur. Un mot sans aucun refus est forcé validé."],
+    "multi-results":   ["Classement", "Multijoueur", "Classement final (podium, 1er en or, moi surligné). Rappel de qui a crié BAC. Accès au détail des scores."],
+    "multi-scores":    ["Détail des scores", "Multijoueur", "Tableau croisé catégories × joueurs. Points par mot : unique = points lettre, partagé = 1pt, forcé validé = +1, pénalité BAC sur mot invalide = −1."]
+};
+
+/* ====================================================================
+   ROUTEUR D'ÉCRANS
+   ==================================================================== */
+let captionVisible = true;
+function go(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('actif'));
+    const el = document.getElementById(id);
+    if (el) el.classList.add('actif');
+    document.querySelectorAll('#sidebar a.nav').forEach(a =>
+        a.classList.toggle('actif', a.getAttribute('data-s') === id));
+    // Bandeau
+    const cap = document.getElementById('caption');
+    const c = CAPTIONS[id];
+    if (c && captionVisible) {
+        cap.style.display = 'block';
+        cap.innerHTML = '<span class="titre-ecran">'+c[0]+'</span><span class="tag">'+c[1]+'</span><br>'+c[2];
+    } else {
+        cap.style.display = captionVisible ? 'block' : 'none';
+        if (!captionVisible) cap.style.display = 'none';
+    }
+    document.getElementById('device-wrap').scrollTop = 0;
+}
+function toggleCaption() {
+    captionVisible = document.getElementById('chk-caption').checked;
+    const actif = document.querySelector('.screen.actif');
+    if (actif) go(actif.id);
+}
+
+/* ====================================================================
+   ACCUEIL — navigation contextuelle
+   ==================================================================== */
+let connecte = false;
+function setConnecte(v) { connecte = v; renderAccueil();
+    // synchronise les radios de la barre latérale
+    document.querySelectorAll('input[name="sess"]')[v?1:0].checked = true;
+}
+function renderAccueil() {
+    const nav = document.getElementById('accueil-nav');
+    const multi = document.getElementById('card-multi');
+    if (connecte) {
+        nav.innerHTML =
+            '<a class="btn btn-orange">👤 emilien</a>'+
+            '<a class="btn btn-red" onclick="setConnecte(false)">🚪 Déconnexion</a>';
+        multi.innerHTML =
+            '<h2>👥 Multijoueur</h2><p>Crée ou rejoins une salle avec des amis</p>'+
+            '<a class="btn btn-blue" onclick="go(\'lobby\')">Jouer en multi 🎮</a>';
+    } else {
+        nav.innerHTML =
+            '<a class="btn btn-blue" onclick="go(\'login\')">🔑 Connexion</a>'+
+            '<a class="btn btn-green" onclick="go(\'register\')">📝 Inscription</a>';
+        multi.innerHTML =
+            '<h2>👥 Multijoueur</h2><p>Crée ou rejoins une salle avec des amis</p>'+
+            '<a class="btn btn-disabled">Jouer en multi 🎮</a>'+
+            '<p class="lock-msg">🔒 Connexion requise pour jouer en multijoueur</p>';
+    }
+}
+
+/* ====================================================================
+   SOLO
+   ==================================================================== */
+let soloLettre = "B", soloPrenom = "Émilien";
+function goSolo(rejouer) {
+    if (!rejouer) soloPrenom = document.getElementById('solo-prenom').value || "Joueur";
+    soloLettre = lettreAleatoire();
+    document.getElementById('sg-prenom').textContent = soloPrenom;
+    document.getElementById('sg-lettre').textContent = soloLettre;
+    document.getElementById('sg-points').textContent = pointsLettre(soloLettre);
+    // Génère les 6 champs
+    let html = "";
+    CATS.forEach(([id,nom]) => {
+        html += '<div class="categorie-row"><label>'+nom+'</label>'+
+                '<input type="text" id="sg-'+id+'" placeholder="Commence par '+soloLettre+'..."></div>';
+    });
+    document.getElementById('sg-form').innerHTML = html;
+    go('solo-game');
+}
+function soloSubmit() {
+    const pts = pointsLettre(soloLettre);
+    let rows = '<tr><th>Catégorie</th><th>Ton mot</th><th>Résultat</th></tr>';
+    let valides = 0;
+    CATS.forEach(([id,nom]) => {
+        const mot = (document.getElementById('sg-'+id).value || "").trim();
+        const r = estValide(id, mot, soloLettre);
+        if (r.valide) valides++;
+        let res;
+        if (r.valide) res = '<span class="valide">✅ +'+pts+' pts</span>';
+        else if (!r.bonneLettre) res = '<span class="invalide">❌ Mauvaise lettre</span>';
+        else res = '<span class="invalide">❌ Mot inconnu</span>';
+        rows += '<tr><td>'+nom+'</td><td>'+(mot||'(vide)')+'</td><td>'+res+'</td></tr>';
+    });
+    document.getElementById('sr-table').innerHTML = rows;
+    document.getElementById('sr-lettre').textContent = soloLettre;
+    document.getElementById('sr-points').textContent = pts;
+    const max = pts * CATS.length;
+    document.getElementById('sr-score').innerHTML =
+        '🏆 Score : <strong>'+(pts*valides)+'</strong> / '+max+' pts ('+valides+' / '+CATS.length+' mots valides)';
+    go('solo-results');
+}
+
+/* ====================================================================
+   MULTI — salle d'attente
+   ==================================================================== */
+let joueursSalle = [];
+function goWaiting() {
+    joueursSalle = [document.getElementById('lobby-prenom') ? (document.getElementById('lobby-prenom').value||"Émilien") : "Émilien"];
+    document.getElementById('w-code').textContent = "PB-" + Math.floor(1000+Math.random()*9000);
+    renderJoueurs();
+    document.getElementById('w-msg').style.display = 'block';
+    go('waiting');
+}
+function renderJoueurs() {
+    document.getElementById('w-liste').innerHTML =
+        joueursSalle.map(j => '<li>'+j+'</li>').join('');
+}
+const ADV = ["Léa","Tom","Sofia"];
+function ajouterJoueur() {
+    const dispo = ADV.find(a => !joueursSalle.includes(a));
+    if (dispo) { joueursSalle.push(dispo); renderJoueurs(); }
+    if (joueursSalle.length >= 3) document.getElementById('w-msg').textContent = "Salle pleine — la partie va démarrer !";
+}
+
+/* ====================================================================
+   MULTI — jeu (BAC + minuteur)
+   ==================================================================== */
+let mgTimer = null;
+function goMultiGame() {
+    // Génère les 6 champs
+    let html = "";
+    CATS.forEach(([id,nom]) => {
+        html += '<div class="categorie-row"><label>'+nom+'</label>'+
+                '<input type="text" id="mg-'+id+'" placeholder="Commence par B..."></div>';
+    });
+    document.getElementById('mg-form').innerHTML = html;
+    document.getElementById('mg-notif').style.display = 'none';
+    document.getElementById('mg-timer').style.display = 'none';
+    document.getElementById('mg-bac').disabled = false;
+    if (mgTimer) clearInterval(mgTimer);
+    go('multi-game');
+}
+function crierBac() {
+    document.getElementById('mg-bac').disabled = true;
+    alert("🏆 Tu as crié BAC ! Tes réponses sont validées, les autres ont 30s.");
+    setTimeout(goChallenge, 600);
+}
+function adversaireBac() {
+    const notif = document.getElementById('mg-notif');
+    notif.style.display = 'block';
+    notif.textContent = '⚡ Léa a crié BAC ! Tu as 30 secondes !';
+    document.getElementById('mg-bac').disabled = true;
+    let n = 30;
+    const box = document.getElementById('mg-timer');
+    box.style.display = 'block';
+    document.getElementById('mg-count').textContent = n;
+    if (mgTimer) clearInterval(mgTimer);
+    mgTimer = setInterval(() => {
+        n--; document.getElementById('mg-count').textContent = n;
+        if (n <= 0) { clearInterval(mgTimer); goChallenge(); }
+    }, 1000);
+}
+function quitterMulti() {
+    if (confirm("⚠️ Si vous quittez, la partie s'arrête pour TOUS les joueurs. Confirmer ?")) {
+        if (mgTimer) clearInterval(mgTimer);
+        go('accueil');
+    }
+}
+
+/* ====================================================================
+   MULTI — contestation (votes + minuteur + "j'ai fini")
+   ==================================================================== */
+// Mots refusés par le jeu, par joueur (jeu de démonstration)
+const CONTEST = {
+    "Émilien": [],
+    "Léa":     [{key:"lea-metier", cat:"Métier", mot:"Bof"}],
+    "Tom":     [{key:"tom-fruit", cat:"Fruit", mot:"Brugnon"}, {key:"tom-metier", cat:"Métier", mot:"Barman"}]
+};
+const CH_JOUEURS = ["Émilien","Léa","Tom"];
+let refus = {};      // key -> Set de joueurs qui refusent
+let finiSet = new Set();
+let chTimer = null;
+
+function goChallenge() {
+    if (mgTimer) clearInterval(mgTimer);
+    refus = {}; finiSet = new Set();
+    let html = "";
+    CH_JOUEURS.forEach(joueur => {
+        const moi = joueur === "Émilien";
+        const mots = CONTEST[joueur] || [];
+        html += '<div class="colonne'+(moi?' moi':'')+'"><h3>'+joueur+(moi?' (moi)':'')+'</h3>';
+        if (!mots.length) {
+            html += '<div class="vide">Aucun mot refusé 🎉</div>';
+        } else {
+            mots.forEach(m => {
+                refus[m.key] = new Set();
+                html += '<div class="mot-ligne"><div class="mot-cat">'+m.cat+'</div>'+
+                        '<div class="mot-valeur">'+m.mot+'</div>';
+                if (moi) {
+                    html += '<div class="ma-ligne">En attente du vote des autres joueurs...</div>';
+                } else {
+                    html += '<div class="mot-vote"><input type="checkbox" id="cb-'+m.key+'" onchange="onVote(\''+m.key+'\',this)">'+
+                            '<label for="cb-'+m.key+'">❌ Refuser ce mot</label></div>';
+                }
+                html += '<div class="vote-info ok" id="info-'+m.key+'">0 refus</div></div>';
+            });
+        }
+        html += '</div>';
+    });
+    document.getElementById('ch-colonnes').innerHTML = html;
+    document.getElementById('ch-total').textContent = CH_JOUEURS.length;
+    document.getElementById('ch-fini').textContent = 0;
+    const btn = document.getElementById('ch-btn');
+    btn.classList.remove('actif'); btn.textContent = "J'ai fini ✓";
+    // Minuteur
+    let n = 120;
+    document.getElementById('ch-timer').textContent = n;
+    if (chTimer) clearInterval(chTimer);
+    chTimer = setInterval(() => {
+        n--; document.getElementById('ch-timer').textContent = n;
+        if (n <= 0) clearInterval(chTimer);
+    }, 1000);
+    go('multi-challenge');
+}
+function onVote(key, cb) {
+    if (cb.checked) refus[key].add("Émilien"); else refus[key].delete("Émilien");
+    cb.parentElement.classList.toggle('refuse-on', cb.checked);
+    const info = document.getElementById('info-'+key);
+    const n = refus[key].size;
+    info.textContent = n + ' refus';
+    info.classList.toggle('danger', n > 0);
+    info.classList.toggle('ok', n === 0);
+}
+function toggleFini() {
+    const btn = document.getElementById('ch-btn');
+    if (finiSet.has("Émilien")) { finiSet.delete("Émilien"); btn.classList.remove('actif'); btn.textContent="J'ai fini ✓"; }
+    else { finiSet.add("Émilien"); btn.classList.add('actif'); btn.textContent='↩ Annuler "J\'ai fini"'; }
+    document.getElementById('ch-fini').textContent = finiSet.size;
+}
+
+/* ====================================================================
+   INIT
+   ==================================================================== */
+renderAccueil();
+go('accueil');
+</script>
+</body>
+</html>
